@@ -1,0 +1,212 @@
+
+====================================================================================================
+                         ARDUINO GREENHOUSE BLUETOOTH WIRING DIAGRAM
+====================================================================================================
+
+                                    ARDUINO UNO/NANO
+                                   ┌───────────────┐
+                                   │               │
+                           RESET ──┤ RST       VIN ├── (Not used)
+                                   │               │
+                             GND ──┤ GND       GND ├── GND Rail  ══╗
+                                   │               │               ║
+                    (Not used) ────┤ D2        RST ├── (NC)        ║
+                                   │               │               ║
+                    LCD D7 ────────┤ D3        +5V ├── +5V Rail  ══╣
+                                   │               │               ║
+                    LCD D6 ────────┤ D4         A5 ├── (Not used)  ║
+                                   │               │               ║
+                    LCD D5 ────────┤ D5         A4 ├── (Not used)  ║
+                                   │               │               ║
+                    LCD D4 ────────┤ D6         A3 ├── (Not used)  ║
+                                   │               │               ║
+                    (Not used) ────┤ D7         A2 ├── (Not used)  ║
+                                   │               │               ║
+                    (Not used) ────┤ D8         A1 ├── (Not used)  ║
+                                   │               │               ║
+        BT RX (via divider) ───────┤ D9         A0 ├── (Not used)  ║
+                                   │               │               ║
+              BT TX ───────────────┤ D10      AREF ├── (NC)        ║
+                                   │               │               ║
+             LCD E ────────────────┤ D11       3V3 ├── (NC)        ║
+                                   │               │               ║
+            LCD RS ────────────────┤ D12       D13 ├── (Not used)  ║
+                                   └───────────────┘               ║
+                                                                   ║
+                                                                   ║
+═══════════════════════════════════════════════════════════════════╩══════════════
+                                    POWER RAILS
+══════════════════════════════════════════════════════════════════════════════════
+
+    +5V Rail ────────────┬─────────┬────────────┬──────────────┬─────────────
+                         │         │            │              │
+                      LCD VDD   LCD A (BL)   BT VCC      Potentiometer
+                                   │                      Left Pin
+                                  [220Ω]
+                                   │
+                               (Backlight)
+
+
+    GND Rail ────────────┬─────────┬────────────┬──────────────┬─────────────┬──────────
+                         │         │            │              │             │
+                      LCD VSS   LCD K      BT GND      Potentiometer    LCD RW
+                                                       Right Pin
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                                   LCD 1602A
+══════════════════════════════════════════════════════════════════════════════════
+
+                          ┌─────────────────────────┐
+                          │   ┌───────────────┐     │
+                          │   │ 16x2 Display  │     │
+                          │   └───────────────┘     │
+                          │                         │
+                          │  ┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐ │
+                          └──┤1├─┤3├─┤5├─┤7├─┤9├─┤11├─┤13├─┤15├──┘
+                             └┬┘ └┬┘ └┬┘ └┬┘ └┬┘ └┬┘ └┬┘ └┬┘
+                          ┌──┤2├─┤4├─┤6├─┤8├─┤10├─┤12├─┤14├─┤16├──┐
+                          │  └─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘ │
+                          └─────────────────────────┘
+
+Pin Connections:
+1  (VSS)  → GND
+2  (VDD)  → +5V
+3  (V0)   → Potentiometer Center (Contrast)
+4  (RS)   → Arduino D12
+5  (RW)   → GND
+6  (E)    → Arduino D11
+7  (D0)   → Not connected
+8  (D1)   → Not connected
+9  (D2)   → Not connected
+10 (D3)   → Not connected
+11 (D4)   → Arduino D6
+12 (D5)   → Arduino D5
+13 (D6)   → Arduino D4
+14 (D7)   → Arduino D3
+15 (A)    → +5V through 220Ω resistor
+16 (K)    → GND
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                        CONTRAST POTENTIOMETER (10K)
+══════════════════════════════════════════════════════════════════════════════════
+
+                                +5V
+                                 │
+                                 │
+                            ┌────┴────┐
+                            │    ╱    │
+                            │   ╱     │  ← Turn to adjust LCD contrast
+                            │  ╱      │
+                            └──┬──────┘
+                               │
+                               ├─────── To LCD V0 (Pin 3)
+                               │
+                              GND
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                      BLUETOOTH MODULE ZS-040 (HC-05/HC-06)
+══════════════════════════════════════════════════════════════════════════════════
+
+                          ┌─────────────────┐
+                          │   HC-05/HC-06   │
+                          │   ZS-040 Module │
+                          │                 │
+                          │  [ Bluetooth ]  │
+                          │                 │
+                          ├─────────────────┤
+                          │ VCC  │  +5V     │ ──── Arduino +5V
+                          ├──────┼──────────┤
+                          │ GND  │  GND     │ ──── Arduino GND
+                          ├──────┼──────────┤
+                          │ TX   │  3.3V    │ ──── Arduino D10 (direct)
+                          ├──────┼──────────┤
+                          │ RX   │  3.3V    │ ──── Arduino D9 (via voltage divider)
+                          └──────┴──────────┘
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                    ⚠️  VOLTAGE DIVIDER (CRITICAL!) ⚠️
+══════════════════════════════════════════════════════════════════════════════════
+
+    Arduino D9 (5V) ────[1K Resistor]────┬──── Bluetooth RX (3.3V)
+                                         │
+                                    [2K Resistor]
+                                         │
+                                        GND
+
+    Math: Vout = 5V × (2K / (1K + 2K)) = 5V × 0.667 = 3.33V ✓
+
+
+⚠️  WARNING: DO NOT connect Arduino D9 directly to Bluetooth RX!
+    This will damage the Bluetooth module! Always use the voltage divider!
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                              COMPLETE BREADBOARD LAYOUT
+══════════════════════════════════════════════════════════════════════════════════
+
+                        +5V Rail ═══════════════════════════════
+                                                                
+    Arduino            LCD 1602A                    Bluetooth Module
+   ┌────────┐       ┌────────────┐                  ┌──────────┐
+   │        │       │            │                  │  HC-05   │
+   │    D12 ├───────┤ RS         │                  │          │
+   │    D11 ├───────┤ E          │      ┌──────┐    │ VCC ─────┼─── +5V
+   │     D6 ├───────┤ D4         │      │ 1K Ω │    │ GND ─────┼─── GND
+   │     D5 ├───────┤ D5         │      └──┬───┘    │ TX  ─────┼─── D10
+   │     D4 ├───────┤ D6         │         │        │ RX  ─────┼─┐
+   │     D3 ├───────┤ D7         │    D9 ──┴──┐     └──────────┘ │
+   │     D9 ├───────────────────────────────┤                    │
+   │    D10 ├────────────────────────────────────────────────────┘
+   │        │       │            │         ┌──┴───┐
+   │        │       │ VDD ───────┼─────────│ 2K Ω │
+   │        │       │ VSS ───────┼──┐      └──┬───┘
+   │        │       │ RW  ───────┼──┤         │
+   │        │       │ K   ───────┼──┘         │
+   └────────┘       └────────────┘            GND
+                          │
+                       ┌──┴──┐
+                       │ POT │  ← Contrast adjust
+                       └─────┘
+
+                        GND Rail ═══════════════════════════════
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                                COMPONENT CHECKLIST
+══════════════════════════════════════════════════════════════════════════════════
+
+  ☐ Arduino Uno or Nano
+  ☐ LCD 1602A (with or without I2C module)
+  ☐ Bluetooth Module ZS-040 (HC-05 or HC-06)
+  ☐ 10K Potentiometer
+  ☐ 1K Resistor (for voltage divider)
+  ☐ 2K Resistor (for voltage divider)
+  ☐ 220Ω Resistor (for LCD backlight)
+  ☐ Breadboard (830 points recommended)
+  ☐ Jumper wires (male-to-male and male-to-female)
+  ☐ USB cable for Arduino
+  ☐ Power supply (USB or external 9V)
+
+
+══════════════════════════════════════════════════════════════════════════════════
+                                 TESTING STEPS
+══════════════════════════════════════════════════════════════════════════════════
+
+  1. ✓ Connect LCD and adjust contrast (should see boxes on display)
+  2. ✓ Upload Arduino code and verify "Smart Greenhouse" appears
+  3. ✓ Connect Bluetooth module and check LED (should blink fast)
+  4. ✓ Pair Bluetooth from computer/phone
+  5. ✓ Create RFCOMM binding (Linux) or note COM port (Windows)
+  6. ✓ Update app.py with correct port
+  7. ✓ Run Flask app: python3 app.py
+  8. ✓ Open browser to http://localhost:5000
+  9. ✓ Click preset buttons and verify LCD changes
+ 10. ✓ Check Serial Monitor for debug messages
+
+
+══════════════════════════════════════════════════════════════════════════════════
+

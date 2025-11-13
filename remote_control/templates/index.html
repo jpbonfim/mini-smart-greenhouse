@@ -1,54 +1,251 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Estufa - Controle via Bluetooth</title>
+  <title>Greenhouse - Bluetooth Control</title>
   <style>
-    body{font-family:sans-serif;margin:30px;}
-    .card{border:1px solid #ccc;border-radius:8px;padding:16px;max-width:480px;}
-    button{margin-top:10px;padding:8px 12px;}
-    select{padding:6px;}
-    .status{margin-top:12px;color:#333;}
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #667eea;
+      font-size: 1.3em;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .preset-btn {
+      padding: 16px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .preset-btn:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+    .preset-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    button {
+      padding: 12px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    button.secondary {
+      background: #95a5a6;
+    }
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+      color: #333;
+      font-family: monospace;
+      min-height: 20px;
+    }
+    .status.success {
+      border-left-color: #27ae60;
+      background: #d5f4e6;
+    }
+    .status.error {
+      border-left-color: #e74c3c;
+      background: #fadbd8;
+    }
+    .icon {
+      font-size: 1.5em;
+      margin-right: 8px;
+    }
+    .info-box {
+      background: #e8f4f8;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+      font-size: 14px;
+      color: #34495e;
+    }
   </style>
 </head>
 <body>
-  <h1>🌿 Estufa - Controle Bluetooth</h1>
-  <div class="card">
-    <label>Escolha a predefinição:</label><br>
-    <select id="preset">
-      <option value="Manjericão">Manjericão</option>
-      <option value="Alface">Alface</option>
-      <option value="Tomate">Tomate</option>
-      <option value="Pimenta">Pimenta</option>
-      <option value="Personalizado">Personalizado</option>
-    </select>
-    <input id="custom" placeholder="Nome personalizado" style="display:none;margin-left:8px;">
-    <button id="sendBtn">Enviar</button>
+  <div class="container">
+    <h1><span class="icon">🌿</span>Smart Greenhouse Control</h1>
+    
+    <div class="card">
+      <h2>Select Plant Preset</h2>
+      <div class="preset-grid">
+        <button class="preset-btn" data-preset="Basil">
+          🌿 Basil
+        </button>
+        <button class="preset-btn" data-preset="Cilantro">
+          🌱 Cilantro
+        </button>
+        <button class="preset-btn" data-preset="Tomato">
+          🍅 Tomato
+        </button>
+      </div>
+      
+      <div class="info-box">
+        <strong>Preset Details:</strong><br>
+        • Basil: 25°C, 18h light, 10min irrigation<br>
+        • Cilantro: 20°C, 12h light, 15min irrigation<br>
+        • Tomato: 22°C, 16h light, 20min irrigation
+      </div>
+    </div>
 
-    <div class="status" id="status">Status: aguardando...</div>
+    <div class="card">
+      <h2>Quick Commands</h2>
+      <button id="nextBtn" class="secondary">⏭️ Next Preset</button>
+      <button id="statusBtn" class="secondary">📊 Get Status</button>
+    </div>
+
+    <div class="card">
+      <h2>Status</h2>
+      <div class="status" id="status">Ready... Waiting for command</div>
+    </div>
   </div>
 
   <script>
-    const preset = document.getElementById('preset');
-    const custom = document.getElementById('custom');
-    const sendBtn = document.getElementById('sendBtn');
     const statusEl = document.getElementById('status');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    const nextBtn = document.getElementById('nextBtn');
+    const statusBtn = document.getElementById('statusBtn');
 
-    preset.addEventListener('change', ()=>{
-      custom.style.display = preset.value === 'Personalizado' ? 'inline-block' : 'none';
+    let currentPreset = null;
+
+    // Preset button click handlers
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const preset = btn.dataset.preset;
+        
+        // Update UI
+        presetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPreset = preset;
+        
+        // Send to Arduino
+        statusEl.textContent = `Sending preset: ${preset}...`;
+        statusEl.className = 'status';
+        
+        try {
+          const res = await fetch('/send_preset', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({preset: preset})
+          });
+          const data = await res.json();
+          
+          if (data.success) {
+            statusEl.textContent = `✅ ${data.message}${data.response ? ' | Response: ' + data.response : ''}`;
+            statusEl.className = 'status success';
+          } else {
+            statusEl.textContent = `❌ Error: ${data.message}`;
+            statusEl.className = 'status error';
+          }
+        } catch (err) {
+          statusEl.textContent = `❌ Connection error: ${err.message}`;
+          statusEl.className = 'status error';
+        }
+      });
     });
 
-    sendBtn.addEventListener('click', async ()=>{
-      let name = preset.value;
-      if(name === 'Personalizado') name = custom.value || 'Personalizado';
-      const msg = `PRESET:${name}`;
-      const res = await fetch('/send', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message:msg})
-      });
-      const data = await res.json();
-      statusEl.textContent = data.message;
+    // Next preset button
+    nextBtn.addEventListener('click', async () => {
+      statusEl.textContent = 'Sending NEXT command...';
+      statusEl.className = 'status';
+      
+      try {
+        const res = await fetch('/send_command', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({command: 'NEXT'})
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          statusEl.textContent = `✅ ${data.message}${data.response ? ' | Response: ' + data.response : ''}`;
+          statusEl.className = 'status success';
+          
+          // Clear active button since we don't know which preset is active now
+          presetBtns.forEach(b => b.classList.remove('active'));
+        } else {
+          statusEl.textContent = `❌ Error: ${data.message}`;
+          statusEl.className = 'status error';
+        }
+      } catch (err) {
+        statusEl.textContent = `❌ Connection error: ${err.message}`;
+        statusEl.className = 'status error';
+      }
+    });
+
+    // Status button
+    statusBtn.addEventListener('click', async () => {
+      statusEl.textContent = 'Requesting status...';
+      statusEl.className = 'status';
+      
+      try {
+        const res = await fetch('/get_status');
+        const data = await res.json();
+        
+        if (data.success) {
+          statusEl.textContent = `📊 ${data.status || 'No response from Arduino'}`;
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = `❌ Error: ${data.message}`;
+          statusEl.className = 'status error';
+        }
+      } catch (err) {
+        statusEl.textContent = `❌ Connection error: ${err.message}`;
+        statusEl.className = 'status error';
+      }
     });
   </script>
 </body>

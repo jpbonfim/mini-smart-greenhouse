@@ -1,13 +1,7 @@
 /*
- * Automatic Greenhouse Controller
+ * Automatic Greenhouse Controller with Bluetooth Control
  * 
- * LCD 1602A Wiring (I2C version - easier):
- * - VCC -> 5V
- * - GND -> GND
- * - SDA -> A4 (Arduino Uno/Nano)
- * - SCL -> A5 (Arduino Uno/Nano)
- * 
- * OR LCD 1602A Wiring (Parallel - 4-bit mode):
+ * LCD 1602A Wiring (Parallel - 4-bit mode):
  * - VSS -> GND
  * - VDD -> 5V
  * - V0 -> Potentiometer (10K) center pin (for contrast adjustment)
@@ -21,19 +15,28 @@
  * - A (Backlight +) -> 5V (through 220Ω resistor)
  * - K (Backlight -) -> GND
  * 
- * Button for preset selection:
- * - One side -> Pin 7
- * - Other side -> GND
- * - (Optional: 10K pull-up resistor between Pin 7 and 5V, or use internal pull-up)
+ * Bluetooth Module ZS-040 (HC-05/HC-06) Wiring:
+ * - VCC -> 5V (or 3.3V depending on module)
+ * - GND -> GND
+ * - TX -> Pin 10 (Arduino RX via SoftwareSerial)
+ * - RX -> Pin 9 (Arduino TX via SoftwareSerial) - Use voltage divider (1K + 2K resistors) to convert 5V to 3.3V
+ * 
+ * Voltage Divider for RX pin (to protect Bluetooth module):
+ * Arduino Pin 9 -> 1K resistor -> Bluetooth RX
+ *                                  |
+ *                                2K resistor -> GND
+ * 
+ * Note: Most HC-05/HC-06 modules can handle 5V on VCC, but RX pin needs 3.3V
  */
 
 #include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
 
 // LCD pins initialization (RS, E, D4, D5, D6, D7)
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-// Button pin
-const int BUTTON_PIN = 7;
+// Bluetooth module pins (RX, TX)
+SoftwareSerial btSerial(10, 9); // RX=10, TX=9
 
 // Preset structure
 struct Preset {
@@ -54,11 +57,8 @@ Preset presets[NUM_PRESETS] = {
 // Active preset index
 int activePreset = 0;
 
-// Button debounce variables
-int lastButtonState = HIGH;
-int buttonState = HIGH;
-unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = 50;
+// Bluetooth command buffer
+String btCommand = "";
 
 // Display update tracking
 int lastDisplayedPreset = -1;
@@ -67,54 +67,131 @@ void setup() {
   // Initialize serial for debugging
   Serial.begin(9600);
   
+  // Initialize Bluetooth serial communication
+  btSerial.begin(9600);
+  
   // Initialize LCD (16 columns, 2 rows)
   lcd.begin(16, 2);
-  
-  // Initialize button pin with internal pull-up
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
   
   // Display welcome message
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Smart Greenhouse");
   lcd.setCursor(0, 1);
-  lcd.print("Initializing...");
+  lcd.print("Bluetooth Ready");
   delay(2000);
   
   // Display initial preset
   displayPreset();
   
   Serial.println("Greenhouse Controller Ready");
-  Serial.println("Press button to change preset");
+  Serial.println("Waiting for Bluetooth commands...");
+  btSerial.println("Greenhouse Controller Ready");
 }
 
 void loop() {
-  // Read button state
-  int reading = digitalRead(BUTTON_PIN);
-  
-  // Check if button state changed
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  }
-  
-  // Debounce button
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != buttonState) {
-      buttonState = reading;
-      
-      // Button pressed (LOW because of pull-up)
-      if (buttonState == LOW) {
-        changePreset();
+  // Check for Bluetooth commands
+  if (btSerial.available()) {
+    char c = btSerial.read();
+    
+    if (c == '\n' || c == '\r') {
+      // Process complete command
+      if (btCommand.length() > 0) {
+        processBluetoothCommand(btCommand);
+        btCommand = "";
       }
+    } else {
+      // Build command string
+      btCommand += c;
     }
   }
-  
-  lastButtonState = reading;
   
   // Update display if preset changed
   if (activePreset != lastDisplayedPreset) {
     displayPreset();
     lastDisplayedPreset = activePreset;
+  }
+}
+
+void processBluetoothCommand(String command) {
+  command.trim(); // Remove whitespace
+  
+  Serial.print("Received command: ");
+  Serial.println(command);
+  
+  // Check for preset change command
+  if (command.startsWith("PRESET:")) {
+    String presetName = command.substring(7); // Get text after "PRESET:"
+    presetName.trim();
+    
+    // Try to match preset name
+    bool found = false;
+    for (int i = 0; i < NUM_PRESETS; i++) {
+      if (presetName.equalsIgnoreCase(presets[i].name)) {
+        activePreset = i;
+        found = true;
+        
+        Serial.print("Changed to preset: ");
+        Serial.println(presets[activePreset].name);
+        
+        btSerial.print("OK: Changed to ");
+        btSerial.println(presets[activePreset].name);
+        
+        // Brief feedback on LCD
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("BT: Changing...");
+        delay(500);
+        break;
+      }
+    }
+    
+    if (!found) {
+      Serial.print("Unknown preset: ");
+      Serial.println(presetName);
+      btSerial.print("ERROR: Unknown preset - ");
+      btSerial.println(presetName);
+      
+      // Show error on LCD
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("BT: Unknown");
+      lcd.setCursor(0, 1);
+      lcd.print("preset!");
+      delay(1500);
+    }
+  }
+  // Check for next preset command
+  else if (command.equalsIgnoreCase("NEXT")) {
+    activePreset = (activePreset + 1) % NUM_PRESETS;
+    
+    Serial.print("Changed to next preset: ");
+    Serial.println(presets[activePreset].name);
+    
+    btSerial.print("OK: Changed to ");
+    btSerial.println(presets[activePreset].name);
+    
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("BT: Next preset");
+    delay(500);
+  }
+  // Check for status request
+  else if (command.equalsIgnoreCase("STATUS")) {
+    btSerial.print("Current: ");
+    btSerial.print(presets[activePreset].name);
+    btSerial.print(" | T:");
+    btSerial.print(presets[activePreset].temperature);
+    btSerial.print("C L:");
+    btSerial.print(presets[activePreset].lighting);
+    btSerial.print("h I:");
+    btSerial.print(presets[activePreset].irrigation);
+    btSerial.println("m");
+  }
+  else {
+    Serial.print("Unknown command: ");
+    Serial.println(command);
+    btSerial.println("ERROR: Unknown command");
   }
 }
 
