@@ -115,6 +115,39 @@ def get_status():
     })
 
 
+@app.route("/get_temperature", methods=["GET"])
+def get_temperature():
+    """Request current temperature from LM35 sensor via Arduino"""
+    if not ser or not ser.is_open:
+        return jsonify({"success": False, "message": "No serial connection"})
+
+    # Send TEMP command
+    ser.write(b"TEMP\n")
+    print("➡️ Sent: TEMP")
+    
+    # Wait for response
+    time.sleep(0.5)
+    response = ""
+    temperature = None
+    
+    if ser.in_waiting > 0:
+        response = ser.readline().decode("utf-8", errors="ignore").strip()
+        print(f"⬅️ Response: {response}")
+        
+        # Parse temperature from response (format: TEMP:25.3)
+        if response.startswith("TEMP:"):
+            try:
+                temperature = float(response.split(":")[1])
+            except (ValueError, IndexError):
+                pass
+    
+    return jsonify({
+        "success": True,
+        "temperature": temperature,
+        "raw_response": response
+    })
+
+
 @app.route("/disconnect", methods=["POST"])
 def disconnect():
     """Close Bluetooth connection"""

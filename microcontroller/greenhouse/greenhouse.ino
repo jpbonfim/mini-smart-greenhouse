@@ -38,6 +38,14 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 // Bluetooth module pins (RX, TX)
 SoftwareSerial btSerial(10, 9); // RX=10, TX=9
 
+// LM35 temperature sensor pin
+const int LM35_PIN = A0;
+
+// Temperature reading variables
+float currentTemperature = 0.0;
+unsigned long lastTempUpdate = 0;
+const unsigned long TEMP_UPDATE_INTERVAL = 5000; // 5 seconds
+
 // Preset structure
 struct Preset {
   const char* name;
@@ -73,6 +81,9 @@ void setup() {
   // Initialize LCD (16 columns, 2 rows)
   lcd.begin(16, 2);
   
+  // Configure LM35 pin
+  pinMode(LM35_PIN, INPUT);
+  
   // Display welcome message
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -80,6 +91,9 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Bluetooth Ready");
   delay(2000);
+  
+  // Read initial temperature
+  readTemperature();
   
   // Display initial preset
   displayPreset();
@@ -104,6 +118,14 @@ void loop() {
       // Build command string
       btCommand += c;
     }
+  }
+  
+  // Update temperature reading every 5 seconds (non-blocking)
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastTempUpdate >= TEMP_UPDATE_INTERVAL) {
+    lastTempUpdate = currentMillis;
+    readTemperature();
+    displayPreset(); // Update display with new temperature
   }
   
   // Update display if preset changed
@@ -188,6 +210,11 @@ void processBluetoothCommand(String command) {
     btSerial.print(presets[activePreset].irrigation);
     btSerial.println("m");
   }
+  // Check for temperature request
+  else if (command.equalsIgnoreCase("TEMP")) {
+    btSerial.print("TEMP:");
+    btSerial.println(currentTemperature, 1);
+  }
   else {
     Serial.print("Unknown command: ");
     Serial.println(command);
@@ -213,30 +240,24 @@ void changePreset() {
 void displayPreset() {
   lcd.clear();
   
-  // Line 1: Preset name
+  // Line 1: Plant name
   lcd.setCursor(0, 0);
-  lcd.print("Plant: ");
   lcd.print(presets[activePreset].name);
   
-  // Line 2: Quick info (Temperature, Lighting, Irrigation)
+  // Line 2: Current temperature
   lcd.setCursor(0, 1);
-  lcd.print("T:");
-  lcd.print(presets[activePreset].temperature);
-  lcd.print("C ");
-  
-  lcd.print("L:");
-  lcd.print(presets[activePreset].lighting);
-  lcd.print("h ");
-  
-  lcd.print("I:");
-  lcd.print(presets[activePreset].irrigation);
-  lcd.print("m");
+  lcd.print("Temp: ");
+  lcd.print(currentTemperature, 1);
+  lcd.print(" C");
   
   // Debug output
-  Serial.println("=== Current Preset ===");
-  Serial.print("Name: ");
+  Serial.println("=== Current Status ===");
+  Serial.print("Plant: ");
   Serial.println(presets[activePreset].name);
-  Serial.print("Temperature: ");
+  Serial.print("Current Temperature: ");
+  Serial.print(currentTemperature, 1);
+  Serial.println("°C");
+  Serial.print("Target Temperature: ");
   Serial.print(presets[activePreset].temperature);
   Serial.println("°C");
   Serial.print("Lighting: ");
@@ -246,4 +267,26 @@ void displayPreset() {
   Serial.print(presets[activePreset].irrigation);
   Serial.println(" minutes/day");
   Serial.println("=====================");
+}
+
+void readTemperature() {
+  // Read analog value from LM35 (0-1023)
+  int analogValue = analogRead(LM35_PIN);
+  
+  // Convert to voltage (0-5V)
+  // Arduino ADC: 5V / 1024 = 0.0048828125V per step
+  float voltage = analogValue * (5.0 / 1023.0);
+  
+  // LM35 outputs 10mV per degree Celsius
+  // So voltage in V * 100 = temperature in °C
+  currentTemperature = voltage * 100.0;
+  
+  // Debug output
+  Serial.print("LM35 Reading - Analog: ");
+  Serial.print(analogValue);
+  Serial.print(" | Voltage: ");
+  Serial.print(voltage, 3);
+  Serial.print("V | Temperature: ");
+  Serial.print(currentTemperature, 1);
+  Serial.println("°C");
 }
