@@ -1,252 +1,447 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <title>Greenhouse - Bluetooth Control</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 30px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    h1 {
-      color: white;
-      text-align: center;
-      margin-bottom: 30px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      margin-bottom: 20px;
-    }
-    .card h2 {
-      margin-top: 0;
-      color: #667eea;
-      font-size: 1.3em;
-    }
-    .preset-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .preset-btn {
-      padding: 16px;
-      border: 2px solid #667eea;
-      background: white;
-      color: #667eea;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-    .preset-btn:hover {
-      background: #667eea;
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-    }
-    .preset-btn.active {
-      background: #667eea;
-      color: white;
-    }
-    button {
-      padding: 12px 20px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      transition: all 0.3s;
-      width: 100%;
-      margin-top: 10px;
-    }
-    button:hover {
-      background: #5568d3;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    button.secondary {
-      background: #95a5a6;
-    }
-    button.secondary:hover {
-      background: #7f8c8d;
-    }
-    .status {
-      margin-top: 16px;
-      padding: 12px;
-      background: #f8f9fa;
-      border-left: 4px solid #667eea;
-      border-radius: 4px;
-      color: #333;
-      font-family: monospace;
-      min-height: 20px;
-    }
-    .status.success {
-      border-left-color: #27ae60;
-      background: #d5f4e6;
-    }
-    .status.error {
-      border-left-color: #e74c3c;
-      background: #fadbd8;
-    }
-    .icon {
-      font-size: 1.5em;
-      margin-right: 8px;
-    }
-    .info-box {
-      background: #e8f4f8;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 12px;
-      font-size: 14px;
-      color: #34495e;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1><span class="icon">🌿</span>Smart Greenhouse Control</h1>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estufa Inteligente - Controle & Monitoramento</title>
     
-    <div class="card">
-      <h2>Select Plant Preset</h2>
-      <div class="preset-grid">
-        <button class="preset-btn" data-preset="Basil">
-          🌿 Basil
-        </button>
-        <button class="preset-btn" data-preset="Cilantro">
-          🌱 Cilantro
-        </button>
-        <button class="preset-btn" data-preset="Tomato">
-          🍅 Tomato
-        </button>
-      </div>
-      
-      <div class="info-box">
-        <strong>Preset Details:</strong><br>
-        • Basil: 25°C, 18h light, 10min irrigation<br>
-        • Cilantro: 20°C, 12h light, 15min irrigation<br>
-        • Tomato: 22°C, 16h light, 20min irrigation
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Quick Commands</h2>
-      <button id="nextBtn" class="secondary">⏭️ Next Preset</button>
-      <button id="statusBtn" class="secondary">📊 Get Status</button>
-    </div>
-
-    <div class="card">
-      <h2>Status</h2>
-      <div class="status" id="status">Ready... Waiting for command</div>
-    </div>
-  </div>
-
-  <script>
-    const statusEl = document.getElementById('status');
-    const presetBtns = document.querySelectorAll('.preset-btn');
-    const nextBtn = document.getElementById('nextBtn');
-    const statusBtn = document.getElementById('statusBtn');
-
-    let currentPreset = null;
-
-    // Preset button click handlers
-    presetBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const preset = btn.dataset.preset;
-        
-        // Update UI
-        presetBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentPreset = preset;
-        
-        // Send to Arduino
-        statusEl.textContent = `Sending preset: ${preset}...`;
-        statusEl.className = 'status';
-        
-        try {
-          const res = await fetch('/send_preset', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({preset: preset})
-          });
-          const data = await res.json();
-          
-          if (data.success) {
-            statusEl.textContent = `✅ ${data.message}${data.response ? ' | Response: ' + data.response : ''}`;
-            statusEl.className = 'status success';
-          } else {
-            statusEl.textContent = `❌ Error: ${data.message}`;
-            statusEl.className = 'status error';
-          }
-        } catch (err) {
-          statusEl.textContent = `❌ Connection error: ${err.message}`;
-          statusEl.className = 'status error';
+    <!-- Tailwind CSS para estilização moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Ícones (Lucide ou FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Configuração de fontes e cores personalizadas -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
         }
-      });
-    });
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
 
-    // Next preset button
-    nextBtn.addEventListener('click', async () => {
-      statusEl.textContent = 'Sending NEXT command...';
-      statusEl.className = 'status';
-      
-      try {
-        const res = await fetch('/send_command', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({command: 'NEXT'})
+        /* Animação de pulso para o status de conexão */
+        .ping-dot {
+            position: relative;
+        }
+        .ping-dot::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            background-color: inherit;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+            opacity: 0.75;
+            z-index: -1;
+        }
+        @keyframes ping {
+            75%, 100% { transform: scale(2); opacity: 0; }
+        }
+
+        .card-transition {
+            transition: all 0.3s ease;
+        }
+        .card-transition:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- Header Principal -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8">
+        <div class="flex items-center gap-3">
+            <div class="bg-brand-100 p-3 rounded-xl text-brand-600">
+                <i class="fa-solid fa-seedling text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Estufa Smart</h1>
+                <div class="flex items-center gap-2 text-sm text-slate-500">
+                    <span class="w-2 h-2 rounded-full bg-green-500 ping-dot" id="connection-dot"></span>
+                    <span id="connection-status">Sistema Online</span>
+                </div>
+            </div>
+        </div>
+        <button id="refreshBtn" class="p-2 text-slate-400 hover:text-brand-600 transition-colors" title="Atualizar Agora">
+            <i class="fa-solid fa-arrows-rotate text-xl" id="refreshIcon"></i>
+        </button>
+    </header>
+
+    <main class="w-full max-w-4xl space-y-6">
+
+        <!-- SEÇÃO 1: Monitoramento em Tempo Real (Atualiza a cada 5s) -->
+        <section>
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-lg font-semibold text-slate-700">Monitoramento em Tempo Real</h2>
+                <span class="text-xs text-slate-400">Atualizado: <span id="last-update">--:--:--</span></span>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Temperatura -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-slate-400 text-sm">Temperatura</span>
+                        <i class="fa-solid fa-temperature-half text-orange-400"></i>
+                    </div>
+                    <div class="flex items-end gap-1">
+                        <span class="text-3xl font-bold text-slate-800" id="val-temp">--</span>
+                        <span class="text-sm text-slate-500 mb-1">°C</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div id="bar-temp" class="h-full bg-orange-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Umidade do Ar -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-slate-400 text-sm">Umidade Ar</span>
+                        <i class="fa-solid fa-droplet text-blue-400"></i>
+                    </div>
+                    <div class="flex items-end gap-1">
+                        <span class="text-3xl font-bold text-slate-800" id="val-humidity">--</span>
+                        <span class="text-sm text-slate-500 mb-1">%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div id="bar-humidity" class="h-full bg-blue-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Umidade do Solo -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-slate-400 text-sm">Solo</span>
+                        <i class="fa-solid fa-water text-brand-500"></i>
+                    </div>
+                    <div class="flex items-end gap-1">
+                        <span class="text-3xl font-bold text-slate-800" id="val-soil">--</span>
+                        <span class="text-sm text-slate-500 mb-1">%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div id="bar-soil" class="h-full bg-brand-500 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Luz -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-slate-400 text-sm">Luminosidade</span>
+                        <i class="fa-solid fa-sun text-yellow-400"></i>
+                    </div>
+                    <div class="flex items-end gap-1">
+                        <span class="text-3xl font-bold text-slate-800" id="val-light">--</span>
+                        <span class="text-sm text-slate-500 mb-1">lux</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div id="bar-light" class="h-full bg-yellow-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 2: Configuração de Cultivo (Presets) -->
+        <section>
+            <h2 class="text-lg font-semibold text-slate-700 mb-4">Configuração de Cultivo</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Manjericão -->
+                <button onclick="selectPreset('Basil')" id="btn-Basil" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                    <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
+                        <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Manjericão</h3>
+                    <ul class="text-xs text-slate-500 space-y-1">
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 25°C Ideal</li>
+                        <li><i class="fa-solid fa-clock w-4"></i> 18h Luz</li>
+                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 10min Rega</li>
+                    </ul>
+                </button>
+
+                <!-- Coentro -->
+                <button onclick="selectPreset('Cilantro')" id="btn-Cilantro" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                    <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
+                        <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-seedling"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Coentro</h3>
+                    <ul class="text-xs text-slate-500 space-y-1">
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 20°C Ideal</li>
+                        <li><i class="fa-solid fa-clock w-4"></i> 12h Luz</li>
+                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 15min Rega</li>
+                    </ul>
+                </button>
+
+                <!-- Tomate -->
+                <button onclick="selectPreset('Tomato')" id="btn-Tomato" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                    <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
+                        <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-500 text-xl mb-4 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-apple-whole"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Tomate</h3>
+                    <ul class="text-xs text-slate-500 space-y-1">
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 22°C Ideal</li>
+                        <li><i class="fa-solid fa-clock w-4"></i> 16h Luz</li>
+                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 20min Rega</li>
+                    </ul>
+                </button>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 3: Controles Manuais & Log -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Ações Rápidas -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-semibold text-slate-700 mb-4">Comandos Rápidos</h2>
+                <button id="btn-next" class="w-full mb-3 bg-slate-800 text-white py-3 px-4 rounded-xl font-medium hover:bg-slate-700 hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-forward"></i> Próximo Estágio
+                </button>
+                <div class="text-xs text-slate-400 text-center mt-2">
+                    Comandos enviados via Bluetooth/API
+                </div>
+            </div>
+
+            <!-- Log do Sistema -->
+            <div class="bg-slate-900 p-6 rounded-2xl shadow-sm text-slate-300 font-mono text-sm overflow-hidden flex flex-col">
+                <h2 class="text-slate-100 font-semibold mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-terminal text-xs"></i> Log do Sistema
+                </h2>
+                <div id="system-log" class="flex-1 overflow-y-auto max-h-32 space-y-1 text-xs">
+                    <div class="text-slate-500">> Sistema iniciado...</div>
+                    <div class="text-brand-400">> Conectado à Estufa.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-8 text-center text-slate-400 text-sm">
+        <p>&copy; 2024 Greenhouse Automation Project</p>
+    </footer>
+
+    <!-- Scripts da Lógica -->
+    <script>
+        // --- VARIÁVEIS DE ESTADO ---
+        let currentPreset = null;
+        let isSimulating = false; // DEFINA COMO FALSE PARA PRODUÇÃO
+
+        // Elementos do DOM
+        const logContainer = document.getElementById('system-log');
+        const refreshIcon = document.getElementById('refreshIcon');
+        const lastUpdateEl = document.getElementById('last-update');
+
+        // --- FUNÇÕES DE UTILIDADE ---
+
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            
+            if (type === 'error') div.className = 'text-red-400';
+            else if (type === 'success') div.className = 'text-brand-400';
+            else div.className = 'text-slate-300';
+
+            div.innerHTML = `<span class="opacity-50">[${time}]</span> ${message}`;
+            logContainer.prepend(div); // Adiciona no topo
+            
+            // Limpa logs antigos se houver muitos
+            if (logContainer.children.length > 20) {
+                logContainer.lastChild.remove();
+            }
+        }
+
+        // --- LÓGICA DE DADOS DA ESTUFA ---
+
+        async function fetchStatus() {
+            // Animação do ícone de refresh
+            refreshIcon.classList.add('animate-spin');
+
+            try {
+                let data;
+
+                if (isSimulating) {
+                    // MOCK DE DADOS (Simulação)
+                    // Remove isso quando conectar ao Arduino real
+                    await new Promise(r => setTimeout(r, 500)); // Delay artificial
+                    data = {
+                        success: true,
+                        status: {
+                            temp: (20 + Math.random() * 5).toFixed(1),
+                            humidity: Math.floor(50 + Math.random() * 20),
+                            soil: Math.floor(40 + Math.random() * 30),
+                            light: Math.floor(200 + Math.random() * 500)
+                        }
+                    };
+                } else {
+                    // CHAMADA REAL PARA API
+                    const res = await fetch('/get_status');
+                    data = await res.json();
+                }
+
+                if (data.success) {
+                    updateDashboardUI(data.status);
+                    
+                    // Atualiza timestamp
+                    const now = new Date();
+                    lastUpdateEl.textContent = now.toLocaleTimeString();
+                    
+                    // Indicador de conexão
+                    document.getElementById('connection-dot').classList.remove('bg-red-500');
+                    document.getElementById('connection-dot').classList.add('bg-green-500', 'ping-dot');
+                    document.getElementById('connection-status').textContent = "Sistema Online";
+                } else {
+                    throw new Error(data.message || 'Erro desconhecido');
+                }
+
+            } catch (err) {
+                addLog(`Erro ao buscar status: ${err.message}`, 'error');
+                document.getElementById('connection-dot').classList.remove('bg-green-500', 'ping-dot');
+                document.getElementById('connection-dot').classList.add('bg-red-500');
+                document.getElementById('connection-status').textContent = "Desconectado";
+            } finally {
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function updateDashboardUI(status) {
+            // Atualiza Textos
+            document.getElementById('val-temp').textContent = status.temp || '--';
+            document.getElementById('val-humidity').textContent = status.humidity || '--';
+            document.getElementById('val-soil').textContent = status.soil || '--';
+            document.getElementById('val-light').textContent = status.light || '--';
+
+            // Atualiza Barras de Progresso (Visual)
+            // Assumindo limites: Temp 0-40, Hum 0-100, Solo 0-100, Luz 0-1000
+            updateBar('bar-temp', status.temp, 40);
+            updateBar('bar-humidity', status.humidity, 100);
+            updateBar('bar-soil', status.soil, 100);
+            updateBar('bar-light', status.light, 800); // 800 lux max visual
+        }
+
+        function updateBar(elementId, value, max) {
+            const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+            document.getElementById(elementId).style.width = `${percentage}%`;
+        }
+
+        // --- LÓGICA DE PRESETS ---
+
+        async function selectPreset(presetName) {
+            // UI Update imediato (otimista)
+            updatePresetUI(presetName);
+            addLog(`Enviando comando: Preset ${presetName}...`);
+
+            try {
+                let data;
+                if (isSimulating) {
+                    await new Promise(r => setTimeout(r, 800));
+                    data = { success: true, message: `Preset ${presetName} ativado` };
+                } else {
+                    const res = await fetch('/send_preset', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({preset: presetName})
+                    });
+                    data = await res.json();
+                }
+
+                if (data.success) {
+                    addLog(`Sucesso: ${data.message}`, 'success');
+                } else {
+                    addLog(`Falha: ${data.message}`, 'error');
+                }
+            } catch (err) {
+                addLog(`Erro de conexão: ${err.message}`, 'error');
+            }
+        }
+
+        function updatePresetUI(activePreset) {
+            currentPreset = activePreset;
+            const presets = ['Basil', 'Cilantro', 'Tomato'];
+            
+            presets.forEach(preset => {
+                const btn = document.getElementById(`btn-${preset}`);
+                const checkDot = btn.querySelector('.check-dot');
+                const checkCircle = btn.querySelector('.check-circle');
+                
+                if (preset === activePreset) {
+                    // Ativo
+                    btn.classList.add('border-brand-500', 'bg-brand-50');
+                    btn.classList.remove('border-transparent', 'bg-white');
+                    checkCircle.classList.add('border-brand-500');
+                    checkCircle.classList.remove('border-slate-200');
+                    checkDot.classList.remove('opacity-0', 'scale-0');
+                } else {
+                    // Inativo
+                    btn.classList.remove('border-brand-500', 'bg-brand-50');
+                    btn.classList.add('border-transparent', 'bg-white');
+                    checkCircle.classList.remove('border-brand-500');
+                    checkCircle.classList.add('border-slate-200');
+                    checkDot.classList.add('opacity-0', 'scale-0');
+                }
+            });
+        }
+
+        // --- BOTÃO NEXT ---
+        document.getElementById('btn-next').addEventListener('click', async () => {
+            addLog('Enviando comando PRÓXIMO...');
+            try {
+                // Simulação ou Real
+                if(isSimulating) {
+                    await new Promise(r => setTimeout(r, 500));
+                    addLog('Comando recebido: Ciclo avançado', 'success');
+                } else {
+                    const res = await fetch('/send_command', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({command: 'NEXT'})
+                    });
+                    // ... tratar resposta
+                }
+                
+                // Reseta seleção visual pois o estado mudou
+                updatePresetUI(null);
+            } catch (err) {
+                addLog(`Erro: ${err.message}`, 'error');
+            }
         });
-        const data = await res.json();
-        
-        if (data.success) {
-          statusEl.textContent = `✅ ${data.message}${data.response ? ' | Response: ' + data.response : ''}`;
-          statusEl.className = 'status success';
-          
-          // Clear active button since we don't know which preset is active now
-          presetBtns.forEach(b => b.classList.remove('active'));
-        } else {
-          statusEl.textContent = `❌ Error: ${data.message}`;
-          statusEl.className = 'status error';
-        }
-      } catch (err) {
-        statusEl.textContent = `❌ Connection error: ${err.message}`;
-        statusEl.className = 'status error';
-      }
-    });
 
-    // Status button
-    statusBtn.addEventListener('click', async () => {
-      statusEl.textContent = 'Requesting status...';
-      statusEl.className = 'status';
-      
-      try {
-        const res = await fetch('/get_status');
-        const data = await res.json();
+        // --- INICIALIZAÇÃO ---
         
-        if (data.success) {
-          statusEl.textContent = `📊 ${data.status || 'No response from Arduino'}`;
-          statusEl.className = 'status success';
-        } else {
-          statusEl.textContent = `❌ Error: ${data.message}`;
-          statusEl.className = 'status error';
-        }
-      } catch (err) {
-        statusEl.textContent = `❌ Connection error: ${err.message}`;
-        statusEl.className = 'status error';
-      }
-    });
-  </script>
+        // 1. Botão de atualizar manual
+        document.getElementById('refreshBtn').addEventListener('click', fetchStatus);
+
+        // 2. Loop automático de 5 segundos
+        setInterval(fetchStatus, 5000);
+
+        // 3. Primeira carga
+        fetchStatus();
+
+    </script>
 </body>
 </html>

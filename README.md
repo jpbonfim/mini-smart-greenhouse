@@ -1,8 +1,8 @@
-# 🌿 Smart Greenhouse Controller with Bluetooth
+# Smart Greenhouse with Bluetooth
 
-An Arduino-based greenhouse controller with Bluetooth connectivity, LCD display, and web interface for remote plant preset management.
+An Arduino-based greenhouse with Bluetooth connectivity, LCD display, and web interface for remote plant preset management and monitoring.
 
-## 📋 Features
+## Features
 
 - **Bluetooth Control**: Change plant presets remotely via ZS-040 (HC-05/HC-06) module
 - **LCD Display**: Real-time display of current preset and parameters
@@ -11,7 +11,7 @@ An Arduino-based greenhouse controller with Bluetooth connectivity, LCD display,
 - **Serial Debugging**: Monitor commands and responses via Serial Monitor
 - **Extensible**: Easy to add new presets and sensors
 
-## 🛠️ Hardware Requirements
+## Hardware Requirements
 
 - Arduino Uno or Nano
 - LCD 1602A (16x2 character display)
@@ -31,7 +31,7 @@ An Arduino-based greenhouse controller with Bluetooth connectivity, LCD display,
 - Flask
 - pySerial
 
-## 📦 Installation
+## Installation
 
 ### 1. Clone Repository
 ```bash
@@ -44,7 +44,7 @@ Follow the detailed wiring guide in:
 - **Visual Diagram**: `WIRING_DIAGRAM.txt`
 - **Detailed Guide**: `BLUETOOTH_WIRING.md`
 
-**Critical:** Use voltage divider for Bluetooth RX pin!
+**Important:** Use voltage divider for Bluetooth RX pin!
 
 ### 3. Upload Arduino Code
 ```bash
@@ -91,13 +91,12 @@ python3 app.py
 
 Open browser: http://localhost:5000
 
-## 🎮 Usage
+## Usage
 
 ### Web Interface
 1. Open http://localhost:5000
 2. Click preset buttons to change plant configuration
 3. Use "Next Preset" to cycle through presets
-4. Click "Get Status" to query current settings
 
 ### Bluetooth Commands
 Send these commands directly via Bluetooth:
@@ -116,7 +115,7 @@ Send these commands directly via Bluetooth:
 | Cilantro | 20°C | 12h/day | 15min/day |
 | Tomato | 22°C | 16h/day | 20min/day |
 
-## 📐 Wiring Diagram
+## Wiring Diagram
 
 ### Bluetooth Module (Critical!)
 ```
@@ -138,7 +137,7 @@ Arduino Pin 10 ── Bluetooth TX (direct)
 
 See `WIRING_DIAGRAM.txt` for complete visual diagram.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### LCD Issues
 - **Blank display**: Adjust contrast potentiometer
@@ -154,9 +153,7 @@ See `WIRING_DIAGRAM.txt` for complete visual diagram.
 - **Windows**: Check Device Manager for COM port
 - **"No serial connection"**: Ensure port isn't used by another app
 
-See `QUICK_START.md` for detailed troubleshooting.
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 mini-smart-greenhouse/
@@ -171,64 +168,5 @@ mini-smart-greenhouse/
 │   └── connect_and_create_rfcomm.sh  # Linux BT connection script
 ├── BLUETOOTH_WIRING.md            # Detailed wiring guide
 ├── WIRING_DIAGRAM.txt             # ASCII wiring diagram
-├── QUICK_START.md                 # Quick start guide
-├── RESUMO_PT.md                   # Portuguese summary
 └── README.md                      # This file
 ```
-
-## 🚀 Future Enhancements
-
-- [ ] Add real sensors (DHT22, soil moisture)
-- [ ] Implement relay control for lights and pumps
-- [ ] Data logging to SD card
-- [ ] Mobile app (React Native/Flutter)
-- [ ] Multiple plant zones
-- [ ] Automatic scheduling
-- [ ] Email/SMS alerts
-
-## 📝 Adding Custom Presets
-
-Edit `microcontroller/greenhouse/greenhouse.ino`:
-
-```cpp
-const int NUM_PRESETS = 4;  // Increase count
-
-Preset presets[NUM_PRESETS] = {
-  {"Basil", 25, 18, 10},
-  {"Cilantro", 20, 12, 15},
-  {"Tomato", 22, 16, 20},
-  {"Lettuce", 18, 14, 12}  // Add new preset
-};
-```
-
-Update `remote_control/templates/index.html`:
-```html
-<button class="preset-btn" data-preset="Lettuce">
-  🥬 Lettuce
-</button>
-```
-
-## 📜 License
-
-This project is open source and available under the MIT License.
-
-## 👤 Author
-
-João Bonfim ([@jpbonfim](https://github.com/jpbonfim))
-
-## 🙏 Acknowledgments
-
-- Arduino community for libraries and examples
-- Flask documentation and tutorials
-- HC-05/HC-06 module manufacturers
-
-## 📞 Support
-
-For issues and questions:
-- Check documentation files in this repository
-- Open an issue on GitHub
-- Refer to troubleshooting sections in QUICK_START.md
-
----
-
-**Happy Growing! 🌱**
