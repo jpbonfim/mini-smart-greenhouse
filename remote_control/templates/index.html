@@ -97,64 +97,66 @@
                 <span class="text-xs text-slate-400">Atualizado: <span id="last-update">--:--:--</span></span>
             </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <!-- Temperatura -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-slate-400 text-sm">Temperatura</span>
-                        <i class="fa-solid fa-temperature-half text-orange-400"></i>
+            <!-- Status do Preset Atual -->
+            <div class="bg-gradient-to-r from-brand-500 to-brand-600 text-white p-6 rounded-2xl shadow-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm opacity-80 mb-1">Preset Ativo</div>
+                        <div class="text-2xl font-bold" id="active-preset">--</div>
                     </div>
-                    <div class="flex items-end gap-1">
-                        <span class="text-3xl font-bold text-slate-800" id="val-temp">--</span>
-                        <span class="text-sm text-slate-500 mb-1">°C</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div id="bar-temp" class="h-full bg-orange-400 rounded-full" style="width: 0%"></div>
+                    <div class="text-right">
+                        <div class="text-sm opacity-80 mb-1">Temperatura Alvo</div>
+                        <div class="text-2xl font-bold"><span id="target-temp">--</span>°C</div>
                     </div>
                 </div>
-
-                <!-- Umidade do Ar -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-slate-400 text-sm">Umidade Ar</span>
-                        <i class="fa-solid fa-droplet text-blue-400"></i>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Temperatura Atual -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-slate-400 text-sm">Temperatura Atual</span>
+                            <div class="text-xs text-slate-500 mt-1">
+                                <i class="fa-solid fa-microchip"></i> Sensor LM35
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-temperature-half text-orange-400 text-2xl"></i>
                     </div>
-                    <div class="flex items-end gap-1">
-                        <span class="text-3xl font-bold text-slate-800" id="val-humidity">--</span>
-                        <span class="text-sm text-slate-500 mb-1">%</span>
+                    <div class="flex items-end gap-2">
+                        <span class="text-4xl font-bold text-slate-800" id="val-temp">--</span>
+                        <span class="text-lg text-slate-500 mb-2">°C</span>
                     </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div id="bar-humidity" class="h-full bg-blue-400 rounded-full" style="width: 0%"></div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
+                        <div id="bar-temp" class="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400 mt-2">
+                        <span>0°C</span>
+                        <span>50°C</span>
                     </div>
                 </div>
 
                 <!-- Umidade do Solo -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-slate-400 text-sm">Solo</span>
-                        <i class="fa-solid fa-water text-brand-500"></i>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-slate-400 text-sm">Umidade do Solo</span>
+                            <div class="text-xs text-slate-500 mt-1">
+                                <i class="fa-solid fa-microchip"></i> Sensor Capacitivo
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-water text-brand-500 text-2xl"></i>
                     </div>
-                    <div class="flex items-end gap-1">
-                        <span class="text-3xl font-bold text-slate-800" id="val-soil">--</span>
-                        <span class="text-sm text-slate-500 mb-1">%</span>
+                    <div class="flex items-end gap-2">
+                        <span class="text-4xl font-bold text-slate-800" id="val-soil">--</span>
+                        <span class="text-lg text-slate-500 mb-2">%</span>
                     </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div id="bar-soil" class="h-full bg-brand-500 rounded-full" style="width: 0%"></div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
+                        <div id="bar-soil" class="h-full bg-gradient-to-r from-brand-400 to-blue-500 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                </div>
-
-                <!-- Luz -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 card-transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-slate-400 text-sm">Luminosidade</span>
-                        <i class="fa-solid fa-sun text-yellow-400"></i>
-                    </div>
-                    <div class="flex items-end gap-1">
-                        <span class="text-3xl font-bold text-slate-800" id="val-light">--</span>
-                        <span class="text-sm text-slate-500 mb-1">lux</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div id="bar-light" class="h-full bg-yellow-400 rounded-full" style="width: 0%"></div>
+                    <div class="flex justify-between text-xs text-slate-400 mt-2">
+                        <span>Seco</span>
+                        <span>Saturado</span>
                     </div>
                 </div>
             </div>
@@ -176,8 +178,7 @@
                     <h3 class="font-bold text-lg mb-1">Manjericão</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
                         <li><i class="fa-solid fa-temperature-quarter w-4"></i> 25°C Ideal</li>
-                        <li><i class="fa-solid fa-clock w-4"></i> 18h Luz</li>
-                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 10min Rega</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 60-70%</li>
                     </ul>
                 </button>
 
@@ -192,8 +193,7 @@
                     <h3 class="font-bold text-lg mb-1">Coentro</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
                         <li><i class="fa-solid fa-temperature-quarter w-4"></i> 20°C Ideal</li>
-                        <li><i class="fa-solid fa-clock w-4"></i> 12h Luz</li>
-                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 15min Rega</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 55-65%</li>
                     </ul>
                 </button>
 
@@ -208,8 +208,7 @@
                     <h3 class="font-bold text-lg mb-1">Tomate</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
                         <li><i class="fa-solid fa-temperature-quarter w-4"></i> 22°C Ideal</li>
-                        <li><i class="fa-solid fa-clock w-4"></i> 16h Luz</li>
-                        <li><i class="fa-solid fa-faucet-drip w-4"></i> 20min Rega</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 65-75%</li>
                     </ul>
                 </button>
             </div>
@@ -248,9 +247,16 @@
 
     <!-- Scripts da Lógica -->
     <script>
+        // ============================================================
+        // CONFIGURAÇÃO DE MODO
+        // ============================================================
+        // isSimulating = true  -> Modo simulação (dados fake para teste)
+        // isSimulating = false -> Modo produção (conecta ao Arduino real)
+        // ============================================================
+        
         // --- VARIÁVEIS DE ESTADO ---
         let currentPreset = null;
-        let isSimulating = false; // DEFINA COMO FALSE PARA PRODUÇÃO
+        let isSimulating = true; // DEFINA COMO FALSE PARA PRODUÇÃO REAL
 
         // Elementos do DOM
         const logContainer = document.getElementById('system-log');
@@ -291,11 +297,11 @@
                     await new Promise(r => setTimeout(r, 500)); // Delay artificial
                     data = {
                         success: true,
-                        status: {
-                            temp: (20 + Math.random() * 5).toFixed(1),
-                            humidity: Math.floor(50 + Math.random() * 20),
-                            soil: Math.floor(40 + Math.random() * 30),
-                            light: Math.floor(200 + Math.random() * 500)
+                        status: "Preset:Basil|Temp:25.3C|Target:25C",
+                        data: {
+                            preset: "Basil",
+                            current_temp: "25.3",
+                            target_temp: "25"
                         }
                     };
                 } else {
@@ -305,7 +311,7 @@
                 }
 
                 if (data.success) {
-                    updateDashboardUI(data.status);
+                    updateDashboardUI(data.data);
                     
                     // Atualiza timestamp
                     const now = new Date();
@@ -329,19 +335,27 @@
             }
         }
 
-        function updateDashboardUI(status) {
-            // Atualiza Textos
-            document.getElementById('val-temp').textContent = status.temp || '--';
-            document.getElementById('val-humidity').textContent = status.humidity || '--';
-            document.getElementById('val-soil').textContent = status.soil || '--';
-            document.getElementById('val-light').textContent = status.light || '--';
+        function updateDashboardUI(data) {
+            // Atualiza informações do preset
+            document.getElementById('active-preset').textContent = data.preset || '--';
+            document.getElementById('target-temp').textContent = data.target_temp || '--';
+            
+            // Atualiza temperatura atual
+            const currentTemp = parseFloat(data.current_temp) || 0;
+            document.getElementById('val-temp').textContent = currentTemp.toFixed(1);
+            
+            // Atualiza Umidade do Solo (simulado por enquanto, será implementado depois)
+            const soilMoisture = 65; // Placeholder - será substituído quando houver sensor
+            document.getElementById('val-soil').textContent = soilMoisture;
 
             // Atualiza Barras de Progresso (Visual)
-            // Assumindo limites: Temp 0-40, Hum 0-100, Solo 0-100, Luz 0-1000
-            updateBar('bar-temp', status.temp, 40);
-            updateBar('bar-humidity', status.humidity, 100);
-            updateBar('bar-soil', status.soil, 100);
-            updateBar('bar-light', status.light, 800); // 800 lux max visual
+            // Temperatura: 0-50°C
+            updateBar('bar-temp', currentTemp, 50);
+            // Solo: 0-100%
+            updateBar('bar-soil', soilMoisture, 100);
+            
+            // Atualiza UI do preset ativo
+            updatePresetUI(data.preset);
         }
 
         function updateBar(elementId, value, max) {

@@ -31,7 +31,12 @@
  * Pin Usage Summary:
  * - Pins 2, 4, 7, 8, 12, 13: LCD (Digital only, no PWM)
  * - Pins 9, 10: Bluetooth (Digital only, no PWM)
- * - PWM pins 3, 5, 6, 11: Available for future use (sensors, actuators, dimming)
+ * - PWM pins 3, 5, 6, 11: Temperature control (Fan and Heater)
+ * 
+ * Temperature Control (Baseboard):
+ * - Pin 11 (PWM): Fan (Cooling - Channel A, Connector X10)
+ * - Pin 6 (PWM): Resistor (Heating - Channel B, Connector X11, requires JP5 closed)
+ * - Pin A0 (Analog): LM35 Temperature Sensor (Connector X1)
  */
 
 #include <LiquidCrystal.h>
@@ -42,6 +47,32 @@ LiquidCrystal lcd(12, 8, 7, 4, 2, 13);
 
 // Bluetooth module pins (RX, TX)
 SoftwareSerial btSerial(10, 9); // RX=10, TX=9
+
+// =============================================================
+// TEMPERATURE CONTROL - PI CONTROLLER (HEATING + COOLING)
+// =============================================================
+
+// VENTILADOR (Canal A - Resfriamento - Conector X10)
+const int pinoFan_PWM = 11;
+
+// RESISTOR (Canal B - Aquecimento - Conector X11)
+const int pinoRes_PWM = 6;   // DOUT_5 -> Enable B (Requer Jumper JP5 FECHADO)
+
+// SENSOR LM35 (Conector X1)
+const int pinoSensor = A0;   
+
+// PI Controller Parameters
+float Kp = 15.0;  // Proportional Gain
+float Ki = 0.5;   // Integral Gain
+
+// Control Variables
+double temperaturaAtual = 0;
+double erro = 0;
+double termoIntegral = 0;
+double saidaControle = 0;
+
+unsigned long ultimaLeitura = 0;
+const int intervaloControle = 200; // Control every 200ms
 
 // Preset structure
 struct Preset {
@@ -54,7 +85,7 @@ struct Preset {
 // Define presets
 const int NUM_PRESETS = 3;
 Preset presets[NUM_PRESETS] = {
-  {"Basil", 25, 18, 10},
+  {"Basil", 666, 18, 10},
   {"Cilantro", 20, 12, 15},
   {"Tomato", 22, 16, 20}
 };
@@ -68,6 +99,10 @@ String btCommand = "";
 // Display update tracking
 int lastDisplayedPreset = -1;
 
+// Display refresh for non-blocking updates
+unsigned long ultimaAtualizacaoDisplay = 0;
+const int intervaloDisplay = 1000; // Update display every 1 second
+
 void setup() {
   // Initialize serial for debugging
   Serial.begin(9600);
@@ -78,23 +113,42 @@ void setup() {
   // Initialize LCD (16 columns, 2 rows)
   lcd.begin(16, 2);
   
+  // Configure temperature control pins
+  pinMode(pinoFan_PWM, OUTPUT);
+  pinMode(pinoRes_PWM, OUTPUT);
+  
   // Display welcome message
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Smart Greenhouse");
   lcd.setCursor(0, 1);
-  lcd.print("Bluetooth Ready");
+  lcd.print("Initializing...");
   delay(2000);
   
   // Display initial preset
   displayPreset();
   
+  Serial.println("--- GREENHOUSE CONTROLLER WITH PI CONTROL ---");
   Serial.println("Greenhouse Controller Ready");
   Serial.println("Waiting for Bluetooth commands...");
   btSerial.println("Greenhouse Controller Ready");
 }
 
 void loop() {
+  unsigned long agora = millis();
+  
+  // Execute temperature control cycle
+  if (agora - ultimaLeitura >= intervaloControle) {
+    executarControleTemperatura();
+    ultimaLeitura = agora;
+  }
+  
+  // Update display non-blocking
+  if (agora - ultimaAtualizacaoDisplay >= intervaloDisplay) {
+    displayPreset();
+    ultimaAtualizacaoDisplay = agora;
+  }
+  
   // Check for Bluetooth commands
   if (btSerial.available()) {
     char c = btSerial.read();
@@ -109,12 +163,6 @@ void loop() {
       // Build command string
       btCommand += c;
     }
-  }
-  
-  // Update display if preset changed
-  if (activePreset != lastDisplayedPreset) {
-    displayPreset();
-    lastDisplayedPreset = activePreset;
   }
 }
 
@@ -183,15 +231,13 @@ void processBluetoothCommand(String command) {
   }
   // Check for status request
   else if (command.equalsIgnoreCase("STATUS")) {
-    btSerial.print("Current: ");
+    btSerial.print("Preset:");
     btSerial.print(presets[activePreset].name);
-    btSerial.print(" | T:");
+    btSerial.print("|Temp:");
+    btSerial.print(temperaturaAtual, 1);
+    btSerial.print("C|Target:");
     btSerial.print(presets[activePreset].temperature);
-    btSerial.print("C L:");
-    btSerial.print(presets[activePreset].lighting);
-    btSerial.print("h I:");
-    btSerial.print(presets[activePreset].irrigation);
-    btSerial.println("m");
+    btSerial.println("C");
   }
   else {
     Serial.print("Unknown command: ");
@@ -220,35 +266,100 @@ void displayPreset() {
   
   // Line 1: Preset name
   lcd.setCursor(0, 0);
-  lcd.print("Plant: ");
   lcd.print(presets[activePreset].name);
   
-  // Line 2: Quick info (Temperature, Lighting, Irrigation)
+  // Line 2: Current temperature
   lcd.setCursor(0, 1);
-  lcd.print("T:");
-  lcd.print(presets[activePreset].temperature);
-  lcd.print("C ");
+  lcd.print("Temp: ");
+  lcd.print(temperaturaAtual, 1);
+  lcd.print("C");
+}
+
+// =============================================================
+// TEMPERATURE CONTROL FUNCTIONS
+// =============================================================
+
+void executarControleTemperatura() {
+  // 1. Read current temperature
+  temperaturaAtual = lerTemperaturaMedia();
   
-  lcd.print("L:");
-  lcd.print(presets[activePreset].lighting);
-  lcd.print("h ");
+  // 2. Get setpoint from current preset
+  double setpoint = presets[activePreset].temperature;
   
-  lcd.print("I:");
-  lcd.print(presets[activePreset].irrigation);
-  lcd.print("m");
+  // 3. Calculate error
+  // Error > 0: Temperature Low (Need to Heat)
+  // Error < 0: Temperature High (Need to Cool)
+  erro = setpoint - temperaturaAtual;
   
-  // Debug output
-  Serial.println("=== Current Preset ===");
-  Serial.print("Name: ");
-  Serial.println(presets[activePreset].name);
-  Serial.print("Temperature: ");
-  Serial.print(presets[activePreset].temperature);
-  Serial.println("°C");
-  Serial.print("Lighting: ");
-  Serial.print(presets[activePreset].lighting);
-  Serial.println(" hours/day");
-  Serial.print("Irrigation: ");
-  Serial.print(presets[activePreset].irrigation);
-  Serial.println(" minutes/day");
-  Serial.println("=====================");
+  // 4. Calculate Integral (Accumulate error over time)
+  termoIntegral += (erro * Ki);
+  
+  // Anti-Windup Protection (Prevent integral from growing infinitely)
+  if (termoIntegral > 255) termoIntegral = 255;
+  if (termoIntegral < -255) termoIntegral = -255;
+  
+  // 5. Calculate PI Output
+  saidaControle = (Kp * erro) + termoIntegral;
+  
+  // 6. Actuate on devices (Split Range Logic)
+  atuarNoSistema(saidaControle);
+  
+  // 7. Serial Monitor (for debugging/plotting)
+  Serial.print("Temp:");
+  Serial.print(temperaturaAtual);
+  Serial.print(" Target:");
+  Serial.print(setpoint);
+  Serial.print(" Output:");
+  Serial.println(saidaControle);
+}
+
+// Split Range Control Function
+void atuarNoSistema(double output) {
+  int pwmVal = 0;
+
+  if (output > 0) { 
+    // >>> HEATING MODE (Resistor) <<<
+    // Positive output, turn on Channel B
+    
+    if (output > 255) output = 255; // Cap at maximum
+    pwmVal = (int)output;
+
+    // Apply to Resistor and turn off Fan
+    analogWrite(pinoRes_PWM, pwmVal);
+    analogWrite(pinoFan_PWM, 0);
+  } 
+  else {
+    // >>> COOLING MODE (Fan) <<<
+    // Negative output, convert to positive for PWM
+    
+    double outputFan = abs(output);
+    
+    if (outputFan > 255) outputFan = 255;
+    pwmVal = (int)outputFan;
+
+    // Fan Dead Zone Correction
+    // 12V fans don't spin with very low PWM (e.g., < 60)
+    // If control requests little, force minimum so it doesn't stall
+    if (pwmVal > 0 && pwmVal < 60) {
+      pwmVal = 60; 
+    }
+
+    // Turn off Resistor and apply to Fan
+    analogWrite(pinoRes_PWM, 0);
+    analogWrite(pinoFan_PWM, pwmVal);
+  }
+}
+
+// LM35 Sensor Reading (Average for stability)
+double lerTemperaturaMedia() {
+  long soma = 0;
+  int n_leituras = 20;
+  for (int i = 0; i < n_leituras; i++) {
+    soma += analogRead(pinoSensor);
+    delay(2);
+  }
+  float media = soma / (float)n_leituras;
+  
+  // Conversion: (Value * 5V / 1023 steps) / 0.01V per degree
+  return (media * 5.0 / 1023.0) / 0.01;
 }
