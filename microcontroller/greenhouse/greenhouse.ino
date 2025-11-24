@@ -5,20 +5,20 @@
  * - VSS -> GND
  * - VDD -> 5V
  * - V0 -> Potentiometer (10K) center pin (for contrast adjustment)
- * - RS -> Pin 12
+ * - RS -> Pin 12 (Digital)
  * - RW -> GND
- * - E -> Pin 11
- * - D4 -> Pin 5
- * - D5 -> Pin 4
- * - D6 -> Pin 3
- * - D7 -> Pin 2
+ * - E -> Pin 8 (Digital)
+ * - D4 -> Pin 7 (Digital)
+ * - D5 -> Pin 4 (Digital)
+ * - D6 -> Pin 2 (Digital)
+ * - D7 -> Pin 13 (Digital)
  * - A (Backlight +) -> 5V (through 220Ω resistor)
  * - K (Backlight -) -> GND
  * 
  * Bluetooth Module ZS-040 (HC-05/HC-06) Wiring:
  * - VCC -> 5V (or 3.3V depending on module)
  * - GND -> GND
- * - TX -> Pin 10 (Arduino RX via SoftwareSerial)
+ * - TX -> Pin 10 (Arduino RX via SoftwareSerial) - Digital, no PWM needed
  * - RX -> Pin 9 (Arduino TX via SoftwareSerial) - Use voltage divider (1K + 2K resistors) to convert 5V to 3.3V
  * 
  * Voltage Divider for RX pin (to protect Bluetooth module):
@@ -27,13 +27,18 @@
  *                                2K resistor -> GND
  * 
  * Note: Most HC-05/HC-06 modules can handle 5V on VCC, but RX pin needs 3.3V
+ * 
+ * Pin Usage Summary:
+ * - Pins 2, 4, 7, 8, 12, 13: LCD (Digital only, no PWM)
+ * - Pins 9, 10: Bluetooth (Digital only, no PWM)
+ * - PWM pins 3, 5, 6, 11: Available for future use (sensors, actuators, dimming)
  */
 
 #include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
 
 // LCD pins initialization (RS, E, D4, D5, D6, D7)
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(12, 8, 7, 4, 2, 13);
 
 // Bluetooth module pins (RX, TX)
 SoftwareSerial btSerial(10, 9); // RX=10, TX=9
