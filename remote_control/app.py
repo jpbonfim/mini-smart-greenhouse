@@ -98,22 +98,22 @@ def send_preset():
         
         Body:
         {
-            "preset": "Basil"  // Preset name (String): "Basil", "Cilantro", or "Tomato"
+            "preset": "Manjericao"  // Preset name (String): "Manjericao", "Coentro", "Salsinha", "Cebolinha", or "Oregano"
         }
     
     Arduino Command Sent:
         "PRESET:Basil\\n"
     
     Arduino Response Format:
-        Success: "OK: Changed to Basil"
+        Success: "OK: Changed to Manjericao"
         Error: "ERROR: Unknown preset - InvalidName"
     
     Response Format:
         Success:
         {
             "success": true,
-            "message": "Sent: Basil",
-            "response": "OK: Changed to Basil"
+            "message": "Sent: Manjericao",
+            "response": "OK: Changed to Manjericao"
         }
         
         Error (No connection):
@@ -131,7 +131,7 @@ def send_preset():
     Example Usage:
         curl -X POST http://localhost:5000/send_preset \\
              -H "Content-Type: application/json" \\
-             -d '{"preset": "Basil"}'
+             -d '{"preset": "Manjericao"}'
     """
     if not ser or not ser.is_open:
         return jsonify({"success": False, "message": "No serial connection"})
@@ -254,7 +254,7 @@ def get_status():
         "STATUS\\n"
     
     Arduino Response Format:
-        Raw: "Preset:Basil|Temp:25.3C|Target:25C"
+        Raw: "Preset:Manjericao|Temp:25.3C|Target:29C"
         
         Components:
         - Preset: Current preset name
@@ -265,11 +265,11 @@ def get_status():
         Success:
         {
             "success": true,
-            "status": "Preset:Basil|Temp:25.3C|Target:25C",
+            "status": "Preset:Manjericao|Temp:25.3C|Target:29C",
             "data": {
-                "preset": "Basil",           // Current preset name (String)
+                "preset": "Manjericao",      // Current preset name (String)
                 "current_temp": "25.3",      // Current temperature (String, numeric)
-                "target_temp": "25"          // Target temperature (String, numeric)
+                "target_temp": "29"          // Target temperature (String, numeric)
             }
         }
         

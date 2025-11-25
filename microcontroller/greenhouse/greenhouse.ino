@@ -77,17 +77,18 @@ const int intervaloControle = 200; // Control every 200ms
 // Preset structure
 struct Preset {
   const char* name;
-  int temperature;  // °C
-  int lighting;     // hours per day
-  int irrigation;   // minutes per day
+  float temperature;  // °C
+  int soilMoisture;   // %
 };
 
 // Define presets
-const int NUM_PRESETS = 3;
+const int NUM_PRESETS = 5;
 Preset presets[NUM_PRESETS] = {
-  {"Basil", 666, 18, 10},
-  {"Cilantro", 20, 12, 15},
-  {"Tomato", 22, 16, 20}
+  {"Manjericao", 29.0, 30},
+  {"Coentro", 17.0, 30},
+  {"Salsinha", 24.0, 30},
+  {"Cebolinha", 18.5, 30},
+  {"Oregano", 18.5, 10}
 };
 
 // Active preset index

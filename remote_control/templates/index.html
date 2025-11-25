@@ -76,7 +76,7 @@
                 <i class="fa-solid fa-seedling text-2xl"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Estufa Smart</h1>
+                <h1 class="text-2xl font-bold text-slate-900">Estufa Inteligente</h1>
                 <div class="flex items-center gap-2 text-sm text-slate-500">
                     <span class="w-2 h-2 rounded-full bg-green-500 ping-dot" id="connection-dot"></span>
                     <span id="connection-status">Sistema Online</span>
@@ -117,9 +117,6 @@
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <span class="text-slate-400 text-sm">Temperatura Atual</span>
-                            <div class="text-xs text-slate-500 mt-1">
-                                <i class="fa-solid fa-microchip"></i> Sensor LM35
-                            </div>
                         </div>
                         <i class="fa-solid fa-temperature-half text-orange-400 text-2xl"></i>
                     </div>
@@ -141,9 +138,6 @@
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <span class="text-slate-400 text-sm">Umidade do Solo</span>
-                            <div class="text-xs text-slate-500 mt-1">
-                                <i class="fa-solid fa-microchip"></i> Sensor Capacitivo
-                            </div>
                         </div>
                         <i class="fa-solid fa-water text-brand-500 text-2xl"></i>
                     </div>
@@ -168,7 +162,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Manjericão -->
-                <button onclick="selectPreset('Basil')" id="btn-Basil" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                <button onclick="selectPreset('Manjericao')" id="btn-Manjericao" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
                     <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
                         <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
                     </div>
@@ -177,13 +171,13 @@
                     </div>
                     <h3 class="font-bold text-lg mb-1">Manjericão</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
-                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 25°C Ideal</li>
-                        <li><i class="fa-solid fa-water w-4"></i> Solo: 60-70%</li>
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 29°C Ideal</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 30%</li>
                     </ul>
                 </button>
 
                 <!-- Coentro -->
-                <button onclick="selectPreset('Cilantro')" id="btn-Cilantro" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                <button onclick="selectPreset('Coentro')" id="btn-Coentro" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
                     <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
                         <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
                     </div>
@@ -192,23 +186,53 @@
                     </div>
                     <h3 class="font-bold text-lg mb-1">Coentro</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
-                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 20°C Ideal</li>
-                        <li><i class="fa-solid fa-water w-4"></i> Solo: 55-65%</li>
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 17°C Ideal</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 30%</li>
                     </ul>
                 </button>
 
-                <!-- Tomate -->
-                <button onclick="selectPreset('Tomato')" id="btn-Tomato" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                <!-- Salsinha -->
+                <button onclick="selectPreset('Salsinha')" id="btn-Salsinha" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
                     <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
                         <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
                     </div>
-                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-500 text-xl mb-4 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-apple-whole"></i>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-spa"></i>
                     </div>
-                    <h3 class="font-bold text-lg mb-1">Tomate</h3>
+                    <h3 class="font-bold text-lg mb-1">Salsinha</h3>
                     <ul class="text-xs text-slate-500 space-y-1">
-                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 22°C Ideal</li>
-                        <li><i class="fa-solid fa-water w-4"></i> Solo: 65-75%</li>
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 24°C Ideal</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 30%</li>
+                    </ul>
+                </button>
+
+                <!-- Cebolinha -->
+                <button onclick="selectPreset('Cebolinha')" id="btn-Cebolinha" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                    <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
+                        <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-carrot"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Cebolinha</h3>
+                    <ul class="text-xs text-slate-500 space-y-1">
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 18.5°C Ideal</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 30%</li>
+                    </ul>
+                </button>
+
+                <!-- Orégano -->
+                <button onclick="selectPreset('Oregano')" id="btn-Oregano" class="preset-card group relative bg-white border-2 border-transparent p-6 rounded-2xl shadow-sm hover:border-brand-300 transition-all text-left">
+                    <div class="absolute top-4 right-4 w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center check-circle">
+                        <div class="w-3 h-3 bg-brand-500 rounded-full opacity-0 transform scale-0 transition-all check-dot"></div>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl mb-4 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-mortar-pestle"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Orégano</h3>
+                    <ul class="text-xs text-slate-500 space-y-1">
+                        <li><i class="fa-solid fa-temperature-quarter w-4"></i> 18.5°C Ideal</li>
+                        <li><i class="fa-solid fa-water w-4"></i> Solo: 10%</li>
                     </ul>
                 </button>
             </div>
@@ -258,6 +282,18 @@
         let currentPreset = null;
         let isSimulating = true; // DEFINA COMO FALSE PARA PRODUÇÃO REAL
 
+        // Configuração de presets para simulação
+        const presetConfigs = {
+            'Manjericao': { temp: 29, soil: 30 },
+            'Coentro': { temp: 17, soil: 30 },
+            'Salsinha': { temp: 24, soil: 30 },
+            'Cebolinha': { temp: 18.5, soil: 30 },
+            'Oregano': { temp: 18.5, soil: 10 }
+        };
+
+        // Estado da simulação
+        let simulatedPreset = 'Manjericao'; // Preset inicial
+
         // Elementos do DOM
         const logContainer = document.getElementById('system-log');
         const refreshIcon = document.getElementById('refreshIcon');
@@ -295,13 +331,30 @@
                     // MOCK DE DADOS (Simulação)
                     // Remove isso quando conectar ao Arduino real
                     await new Promise(r => setTimeout(r, 500)); // Delay artificial
+                    
+                    // Gera valores próximos ao alvo
+                    const config = presetConfigs[simulatedPreset];
+                    const targetTemp = config.temp;
+                    const targetSoil = config.soil;
+                    
+                    // LÓGICA DE SIMULAÇÃO CORRIGIDA:
+                    
+                    // Temperatura: Variação aleatória de ±1.5°C
+                    const tempVariation = (Math.random() * 3) - 1.5;
+                    const currentTemp = (targetTemp + tempVariation).toFixed(1);
+                    
+                    // Umidade do solo: Variação aleatória, mas SEMPRE ACIMA do alvo (+2% a +8%)
+                    const soilVariation = 2 + Math.random() * 6;
+                    const currentSoil = Math.round(targetSoil + soilVariation);
+                    
                     data = {
                         success: true,
-                        status: "Preset:Basil|Temp:25.3C|Target:25C",
+                        status: `Preset:${simulatedPreset}|Temp:${currentTemp}C|Target:${targetTemp}C`,
                         data: {
-                            preset: "Basil",
-                            current_temp: "25.3",
-                            target_temp: "25"
+                            preset: simulatedPreset,
+                            current_temp: currentTemp,
+                            target_temp: targetTemp.toString(),
+                            soil_moisture: currentSoil.toString()
                         }
                     };
                 } else {
@@ -344,8 +397,8 @@
             const currentTemp = parseFloat(data.current_temp) || 0;
             document.getElementById('val-temp').textContent = currentTemp.toFixed(1);
             
-            // Atualiza Umidade do Solo (simulado por enquanto, será implementado depois)
-            const soilMoisture = 65; // Placeholder - será substituído quando houver sensor
+            // Atualiza Umidade do Solo
+            const soilMoisture = parseInt(data.soil_moisture) || 0;
             document.getElementById('val-soil').textContent = soilMoisture;
 
             // Atualiza Barras de Progresso (Visual)
@@ -374,7 +427,12 @@
                 let data;
                 if (isSimulating) {
                     await new Promise(r => setTimeout(r, 800));
+                    // Atualiza o preset simulado
+                    simulatedPreset = presetName;
                     data = { success: true, message: `Preset ${presetName} ativado` };
+                    
+                    // Força atualização imediata do dashboard
+                    fetchStatus();
                 } else {
                     const res = await fetch('/send_preset', {
                         method: 'POST',
@@ -396,7 +454,7 @@
 
         function updatePresetUI(activePreset) {
             currentPreset = activePreset;
-            const presets = ['Basil', 'Cilantro', 'Tomato'];
+            const presets = ['Manjericao', 'Coentro', 'Salsinha', 'Cebolinha', 'Oregano'];
             
             presets.forEach(preset => {
                 const btn = document.getElementById(`btn-${preset}`);
