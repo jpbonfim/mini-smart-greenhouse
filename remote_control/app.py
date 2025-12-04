@@ -309,7 +309,9 @@ def get_status():
     status_data = {
         "preset": "",
         "current_temp": "",
-        "target_temp": ""
+        "target_temp": "",
+        "moisture": "",
+        "valve": ""
     }
     
     if response:
@@ -321,6 +323,10 @@ def get_status():
                 status_data["current_temp"] = part.replace("Temp:", "").replace("C", "")
             elif part.startswith("Target:"):
                 status_data["target_temp"] = part.replace("Target:", "").replace("C", "")
+            elif part.startswith("Moisture:"):
+                status_data["moisture"] = part.replace("Moisture:", "").replace("%", "")
+            elif part.startswith("Valve:"):
+                status_data["valve"] = part.replace("Valve:", "")
     
     return jsonify({
         "success": True,

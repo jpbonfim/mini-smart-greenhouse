@@ -1,366 +1,302 @@
 /*
- * Automatic Greenhouse Controller with Bluetooth Control
- * 
- * LCD 1602A Wiring (Parallel - 4-bit mode):
- * - VSS -> GND
- * - VDD -> 5V
- * - V0 -> Potentiometer (10K) center pin (for contrast adjustment)
- * - RS -> Pin 12 (Digital)
- * - RW -> GND
- * - E -> Pin 8 (Digital)
- * - D4 -> Pin 7 (Digital)
- * - D5 -> Pin 4 (Digital)
- * - D6 -> Pin 2 (Digital)
- * - D7 -> Pin 13 (Digital)
- * - A (Backlight +) -> 5V (through 220Ω resistor)
- * - K (Backlight -) -> GND
- * 
- * Bluetooth Module ZS-040 (HC-05/HC-06) Wiring:
- * - VCC -> 5V (or 3.3V depending on module)
- * - GND -> GND
- * - TX -> Pin 10 (Arduino RX via SoftwareSerial) - Digital, no PWM needed
- * - RX -> Pin 9 (Arduino TX via SoftwareSerial) - Use voltage divider (1K + 2K resistors) to convert 5V to 3.3V
- * 
- * Voltage Divider for RX pin (to protect Bluetooth module):
- * Arduino Pin 9 -> 1K resistor -> Bluetooth RX
- *                                  |
- *                                2K resistor -> GND
- * 
- * Note: Most HC-05/HC-06 modules can handle 5V on VCC, but RX pin needs 3.3V
- * 
- * Pin Usage Summary:
- * - Pins 2, 4, 7, 8, 12, 13: LCD (Digital only, no PWM)
- * - Pins 9, 10: Bluetooth (Digital only, no PWM)
- * - PWM pins 3, 5, 6, 11: Temperature control (Fan and Heater)
- * 
- * Temperature Control (Baseboard):
- * - Pin 11 (PWM): Fan (Cooling - Channel A, Connector X10)
- * - Pin 6 (PWM): Resistor (Heating - Channel B, Connector X11, requires JP5 closed)
- * - Pin A0 (Analog): LM35 Temperature Sensor (Connector X1)
+ * Controlador de Estufa Automática - Versão 2
+ * * Mapeamento de Hardware:
+ * * DISPLAY LCD 1602A (Modo 4-bit):
+ * - RS -> Pino 12
+ * - E  -> Pino 8
+ * - D4 -> Pino 7
+ * - D5 -> Pino 4
+ * - D6 -> Pino 2
+ * - D7 -> Pino 13
+ * * BLUETOOTH (HC-05/06):
+ * - TX -> Pino 10 (Arduino RX)
+ * - RX -> Pino 9  (Arduino TX)
+ * * CONTROLE DE TEMPERATURA:
+ * - Ventoinha (Resfriamento): Pino 11 (PWM - Ponte H Canal A)
+ * - Resistor (Aquecimento):   Pino 6  (RELÉ - Agora Digital ON/OFF)
+ * - Sensor Temp (LM35):       Pino A0
+ * * CONTROLE DE UMIDADE:
+ * - Válvula Solenoide:        Pino 5  (Digital - Ativa Relé/Driver)
+ * - Sensor Solo (LM393):      Pino A1 (Saída Analógica AO do sensor)
  */
 
 #include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
 
-// LCD pins initialization (RS, E, D4, D5, D6, D7)
+// Inicialização do LCD
 LiquidCrystal lcd(12, 8, 7, 4, 2, 13);
 
-// Bluetooth module pins (RX, TX)
+// Bluetooth
 SoftwareSerial btSerial(10, 9); // RX=10, TX=9
 
 // =============================================================
-// TEMPERATURE CONTROL - PI CONTROLLER (HEATING + COOLING)
+// PINOS DE CONTROLE (ATUALIZADO)
 // =============================================================
 
-// VENTILADOR (Canal A - Resfriamento - Conector X10)
+// VENTILADOR (Resfriamento - PWM)
 const int pinoFan_PWM = 11;
 
-// RESISTOR (Canal B - Aquecimento - Conector X11)
-const int pinoRes_PWM = 6;   // DOUT_5 -> Enable B (Requer Jumper JP5 FECHADO)
+// RESISTOR (Aquecimento - RELÉ - Digital)
+const int pinoRes_Rele = 6; 
 
-// SENSOR LM35 (Conector X1)
-const int pinoSensor = A0;   
+// VÁLVULA SOLENOIDE (Irrigação - Digital)
+const int pinoValvula = 5;
 
-// PI Controller Parameters
-float Kp = 15.0;  // Proportional Gain
-float Ki = 0.5;   // Integral Gain
+// SENSORES
+const int pinoSensorTemp = A0;    // LM35
+const int pinoSensorUmidade = A1; // LM393 (Usar pino AO do módulo)
 
-// Control Variables
+// =============================================================
+// PARÂMETROS DE CONTROLE
+// =============================================================
+
+// Parâmetros PI (Apenas para o Ventilador agora)
+float Kp = 15.0; 
+float Ki = 0.5;   
+
+// Variáveis de Controle
 double temperaturaAtual = 0;
+int umidadeAtual = 0; // 0 a 100%
 double erro = 0;
 double termoIntegral = 0;
 double saidaControle = 0;
 
 unsigned long ultimaLeitura = 0;
-const int intervaloControle = 200; // Control every 200ms
+const int intervaloControle = 200; 
 
-// Preset structure
+// Estrutura de Presets (Plantas)
 struct Preset {
   const char* name;
   float temperature;  // °C
-  int soilMoisture;   // %
+  int soilMoisture;   // % (Alvo de umidade)
 };
 
-// Define presets
 const int NUM_PRESETS = 5;
 Preset presets[NUM_PRESETS] = {
-  {"Manjericao", 29.0, 30},
-  {"Coentro", 17.0, 30},
-  {"Salsinha", 24.0, 30},
-  {"Cebolinha", 18.5, 30},
-  {"Oregano", 18.5, 10}
+  {"Manjericao", 29.0, 30}, // Gosta de solo úmido
+  {"Coentro",    17.0, 40},
+  {"Salsinha",   24.0, 40},
+  {"Cebolinha",  18.5, 30},
+  {"Oregano",    18.5, 10}  // Gosta de solo mais seco
 };
 
-// Active preset index
 int activePreset = 0;
-
-// Bluetooth command buffer
 String btCommand = "";
-
-// Display update tracking
-int lastDisplayedPreset = -1;
-
-// Display refresh for non-blocking updates
 unsigned long ultimaAtualizacaoDisplay = 0;
-const int intervaloDisplay = 1000; // Update display every 1 second
+const int intervaloDisplay = 1000;
 
 void setup() {
-  // Initialize serial for debugging
   Serial.begin(9600);
-  
-  // Initialize Bluetooth serial communication
   btSerial.begin(9600);
-  
-  // Initialize LCD (16 columns, 2 rows)
   lcd.begin(16, 2);
   
-  // Configure temperature control pins
+  // Configuração dos Pinos
   pinMode(pinoFan_PWM, OUTPUT);
-  pinMode(pinoRes_PWM, OUTPUT);
+  pinMode(pinoRes_Rele, OUTPUT); // Agora é saída digital p/ Relé
+  pinMode(pinoValvula, OUTPUT);
   
-  // Display welcome message
+  // Inicializa tudo desligado
+  digitalWrite(pinoRes_Rele, LOW);
+  digitalWrite(pinoValvula, LOW);
+  analogWrite(pinoFan_PWM, 0);
+  
+  // Intro
   lcd.clear();
-  lcd.setCursor(0, 0);
   lcd.print("Smart Greenhouse");
   lcd.setCursor(0, 1);
-  lcd.print("Initializing...");
+  lcd.print("V2.0 - Relay");
   delay(2000);
   
-  // Display initial preset
   displayPreset();
   
-  Serial.println("--- GREENHOUSE CONTROLLER WITH PI CONTROL ---");
-  Serial.println("Greenhouse Controller Ready");
-  Serial.println("Waiting for Bluetooth commands...");
-  btSerial.println("Greenhouse Controller Ready");
+  Serial.println("--- GREENHOUSE CONTROLLER V2 ---");
+  Serial.println("Aquecimento: Rele (Pino 6)");
+  Serial.println("Irrigacao: Solenoide (Pino 5)");
 }
 
 void loop() {
   unsigned long agora = millis();
   
-  // Execute temperature control cycle
+  // Executa ciclos de controle
   if (agora - ultimaLeitura >= intervaloControle) {
     executarControleTemperatura();
+    executarControleUmidade(); // Nova função de irrigação
     ultimaLeitura = agora;
   }
   
-  // Update display non-blocking
+  // Atualiza LCD
   if (agora - ultimaAtualizacaoDisplay >= intervaloDisplay) {
     displayPreset();
     ultimaAtualizacaoDisplay = agora;
   }
   
-  // Check for Bluetooth commands
+  // Leitura Bluetooth
   if (btSerial.available()) {
     char c = btSerial.read();
-    
     if (c == '\n' || c == '\r') {
-      // Process complete command
       if (btCommand.length() > 0) {
         processBluetoothCommand(btCommand);
         btCommand = "";
       }
     } else {
-      // Build command string
       btCommand += c;
     }
   }
 }
 
-void processBluetoothCommand(String command) {
-  command.trim(); // Remove whitespace
-  
-  Serial.print("Received command: ");
-  Serial.println(command);
-  
-  // Check for preset change command
-  if (command.startsWith("PRESET:")) {
-    String presetName = command.substring(7); // Get text after "PRESET:"
-    presetName.trim();
-    
-    // Try to match preset name
-    bool found = false;
-    for (int i = 0; i < NUM_PRESETS; i++) {
-      if (presetName.equalsIgnoreCase(presets[i].name)) {
-        activePreset = i;
-        found = true;
-        
-        Serial.print("Changed to preset: ");
-        Serial.println(presets[activePreset].name);
-        
-        btSerial.print("OK: Changed to ");
-        btSerial.println(presets[activePreset].name);
-        
-        // Brief feedback on LCD
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("BT: Changing...");
-        delay(500);
-        break;
-      }
-    }
-    
-    if (!found) {
-      Serial.print("Unknown preset: ");
-      Serial.println(presetName);
-      btSerial.print("ERROR: Unknown preset - ");
-      btSerial.println(presetName);
-      
-      // Show error on LCD
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("BT: Unknown");
-      lcd.setCursor(0, 1);
-      lcd.print("preset!");
-      delay(1500);
-    }
-  }
-  // Check for next preset command
-  else if (command.equalsIgnoreCase("NEXT")) {
-    activePreset = (activePreset + 1) % NUM_PRESETS;
-    
-    Serial.print("Changed to next preset: ");
-    Serial.println(presets[activePreset].name);
-    
-    btSerial.print("OK: Changed to ");
-    btSerial.println(presets[activePreset].name);
-    
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("BT: Next preset");
-    delay(500);
-  }
-  // Check for status request
-  else if (command.equalsIgnoreCase("STATUS")) {
-    btSerial.print("Preset:");
-    btSerial.print(presets[activePreset].name);
-    btSerial.print("|Temp:");
-    btSerial.print(temperaturaAtual, 1);
-    btSerial.print("C|Target:");
-    btSerial.print(presets[activePreset].temperature);
-    btSerial.println("C");
-  }
-  else {
-    Serial.print("Unknown command: ");
-    Serial.println(command);
-    btSerial.println("ERROR: Unknown command");
-  }
-}
-
-void changePreset() {
-  // Cycle to next preset
-  activePreset = (activePreset + 1) % NUM_PRESETS;
-  
-  // Debug output
-  Serial.print("Changed to preset: ");
-  Serial.println(presets[activePreset].name);
-  
-  // Brief feedback
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Changing preset");
-  delay(300);
-}
-
-void displayPreset() {
-  lcd.clear();
-  
-  // Line 1: Preset name
-  lcd.setCursor(0, 0);
-  lcd.print(presets[activePreset].name);
-  
-  // Line 2: Current temperature
-  lcd.setCursor(0, 1);
-  lcd.print("Temp: ");
-  lcd.print(temperaturaAtual, 1);
-  lcd.print("C");
-}
-
 // =============================================================
-// TEMPERATURE CONTROL FUNCTIONS
+// FUNÇÕES DE CONTROLE
 // =============================================================
 
 void executarControleTemperatura() {
-  // 1. Read current temperature
+  // 1. Ler Temperatura
   temperaturaAtual = lerTemperaturaMedia();
-  
-  // 2. Get setpoint from current preset
   double setpoint = presets[activePreset].temperature;
   
-  // 3. Calculate error
-  // Error > 0: Temperature Low (Need to Heat)
-  // Error < 0: Temperature High (Need to Cool)
+  // 2. Calcular Erro e PI
   erro = setpoint - temperaturaAtual;
-  
-  // 4. Calculate Integral (Accumulate error over time)
   termoIntegral += (erro * Ki);
   
-  // Anti-Windup Protection (Prevent integral from growing infinitely)
+  // Anti-Windup
   if (termoIntegral > 255) termoIntegral = 255;
   if (termoIntegral < -255) termoIntegral = -255;
   
-  // 5. Calculate PI Output
+  // Saída do PI
   saidaControle = (Kp * erro) + termoIntegral;
   
-  // 6. Actuate on devices (Split Range Logic)
-  atuarNoSistema(saidaControle);
-  
-  // 7. Serial Monitor (for debugging/plotting)
-  Serial.print("Temp:");
-  Serial.print(temperaturaAtual);
-  Serial.print(" Target:");
-  Serial.print(setpoint);
-  Serial.print(" Output:");
-  Serial.println(saidaControle);
+  // 3. Atuar no Sistema (Lógica Híbrida: Relé + PWM)
+  atuarNoSistemaHibrido(saidaControle, temperaturaAtual, setpoint);
 }
 
-// Split Range Control Function
-void atuarNoSistema(double output) {
-  int pwmVal = 0;
-
-  if (output > 0) { 
-    // >>> HEATING MODE (Resistor) <<<
-    // Positive output, turn on Channel B
-    
-    if (output > 255) output = 255; // Cap at maximum
-    pwmVal = (int)output;
-
-    // Apply to Resistor and turn off Fan
-    analogWrite(pinoRes_PWM, pwmVal);
+void atuarNoSistemaHibrido(double output, double tempAtual, double alvo) {
+  // Histerese para o Relé do Resistor (Para não ficar clicando loucamente)
+  // Se precisa aquecer (Output positivo)
+  
+  if (output > 0) {
+    // --- MODO AQUECIMENTO (RESISTOR NO RELÉ) ---
+    // Ventoinha desligada
     analogWrite(pinoFan_PWM, 0);
+    
+    // Lógica Bang-Bang com Histerese para o Relé
+    // Só liga o relé se a temperatura cair 0.5 abaixo do alvo
+    if (tempAtual < (alvo - 0.5)) {
+      digitalWrite(pinoRes_Rele, HIGH); // Liga Relé
+    }
+    // Só desliga o relé se passar do alvo
+    else if (tempAtual >= alvo) {
+      digitalWrite(pinoRes_Rele, LOW);  // Desliga Relé
+    }
   } 
   else {
-    // >>> COOLING MODE (Fan) <<<
-    // Negative output, convert to positive for PWM
+    // --- MODO RESFRIAMENTO (VENTOINHA PWM) ---
+    // Resistor Desligado (Segurança)
+    digitalWrite(pinoRes_Rele, LOW);
     
+    // Calcula PWM da Ventoinha
     double outputFan = abs(output);
-    
     if (outputFan > 255) outputFan = 255;
-    pwmVal = (int)outputFan;
+    int pwmVal = (int)outputFan;
 
-    // Fan Dead Zone Correction
-    // 12V fans don't spin with very low PWM (e.g., < 60)
-    // If control requests little, force minimum so it doesn't stall
-    if (pwmVal > 0 && pwmVal < 60) {
-      pwmVal = 60; 
-    }
-
-    // Turn off Resistor and apply to Fan
-    analogWrite(pinoRes_PWM, 0);
+    // Correção Zona Morta Ventoinha
+    if (pwmVal > 0 && pwmVal < 60) pwmVal = 60; 
+    
     analogWrite(pinoFan_PWM, pwmVal);
   }
 }
 
-// LM35 Sensor Reading (Average for stability)
+void executarControleUmidade() {
+  // 1. Ler o Sensor de Umidade (LM393)
+  // Mapeamento: O sensor geralmente retorna valor ALTO (1023) quando SECO
+  // e valor BAIXO quando MOLHADO. Vamos inverter para porcentagem (0-100%).
+  int leituraBruta = analogRead(pinoSensorUmidade);
+  
+  // CALIBRAÇÃO AJUSTADA:
+  // - Sensor SECO (ar livre): ~1023 -> 0% de umidade
+  // - Sensor MOLHADO (água): ~358 -> 100% de umidade
+  // Ajuste esses valores conforme seu sensor específico
+  const int VALOR_SECO = 1023;    // Leitura quando sensor está seco
+  const int VALOR_MOLHADO = 358;  // Leitura quando sensor está molhado (calibrado)
+  
+  umidadeAtual = map(leituraBruta, VALOR_SECO, VALOR_MOLHADO, 0, 100);
+  
+  // Trava entre 0 e 100
+  if (umidadeAtual < 0) umidadeAtual = 0;
+  if (umidadeAtual > 100) umidadeAtual = 100;
+
+  // 2. Controle On-Off da Válvula
+  int alvoUmidade = presets[activePreset].soilMoisture;
+  
+  // Se a umidade estiver abaixo do alvo (ex: alvo 30%, atual 20%) -> LIGA ÁGUA
+  if (umidadeAtual < alvoUmidade) {
+    digitalWrite(pinoValvula, HIGH);
+  } 
+  // Se a umidade atingiu o alvo + margem (ex: 35%) -> DESLIGA ÁGUA
+  else if (umidadeAtual > (alvoUmidade + 5)) {
+    digitalWrite(pinoValvula, LOW);
+  }
+}
+
+// =============================================================
+// FUNÇÕES AUXILIARES E BLUETOOTH
+// =============================================================
+
+void processBluetoothCommand(String command) {
+  command.trim();
+  Serial.println("CMD: " + command);
+  
+  if (command.startsWith("PRESET:")) {
+    String presetName = command.substring(7);
+    presetName.trim();
+    for (int i = 0; i < NUM_PRESETS; i++) {
+      if (presetName.equalsIgnoreCase(presets[i].name)) {
+        activePreset = i;
+        btSerial.println("OK: " + String(presets[i].name));
+        lcd.clear(); lcd.print("BT: Preset OK"); delay(500);
+        return;
+      }
+    }
+    btSerial.println("ERROR: Preset not found");
+  }
+  else if (command.equalsIgnoreCase("STATUS")) {
+    // Formato compatível com o app Python:
+    // Preset:Nome|Temp:25.3C|Target:29C|Moisture:30%|Valve:ON
+    btSerial.print("Preset:"); 
+    btSerial.print(presets[activePreset].name);
+    btSerial.print("|Temp:"); 
+    btSerial.print(temperaturaAtual, 1);
+    btSerial.print("C|Target:");
+    btSerial.print(presets[activePreset].temperature, 1);
+    btSerial.print("C|Moisture:");
+    btSerial.print(umidadeAtual);
+    btSerial.print("%|Valve:");
+    btSerial.println((digitalRead(pinoValvula) ? "ON" : "OFF"));
+  }
+}
+
+void displayPreset() {
+  lcd.clear();
+  // Linha 1: Nome e Status Válvula
+  lcd.setCursor(0, 0);
+  lcd.print(presets[activePreset].name);
+  lcd.setCursor(13, 0);
+  if (digitalRead(pinoValvula)) lcd.print("H2O"); // Mostra se regando
+  
+  // Linha 2: Temp e Umidade
+  lcd.setCursor(0, 1);
+  lcd.print("T:");
+  lcd.print(temperaturaAtual, 0);
+  lcd.print("C ");
+  
+  lcd.print("U:");
+  lcd.print(umidadeAtual);
+  lcd.print("%");
+}
+
 double lerTemperaturaMedia() {
   long soma = 0;
-  int n_leituras = 20;
-  for (int i = 0; i < n_leituras; i++) {
-    soma += analogRead(pinoSensor);
+  for (int i = 0; i < 10; i++) {
+    soma += analogRead(pinoSensorTemp);
     delay(2);
   }
-  float media = soma / (float)n_leituras;
-  
-  // Conversion: (Value * 5V / 1023 steps) / 0.01V per degree
-  return (media * 5.0 / 1023.0) / 0.01;
+  return ((soma / 10.0) * 5.0 / 1023.0) / 0.01;
 }

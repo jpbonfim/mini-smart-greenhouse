@@ -280,7 +280,7 @@
         
         // --- VARIÁVEIS DE ESTADO ---
         let currentPreset = null;
-        let isSimulating = true; // DEFINA COMO FALSE PARA PRODUÇÃO REAL
+        let isSimulating = false; // DEFINA COMO FALSE PARA PRODUÇÃO REAL
 
         // Configuração de presets para simulação
         const presetConfigs = {
@@ -354,7 +354,8 @@
                             preset: simulatedPreset,
                             current_temp: currentTemp,
                             target_temp: targetTemp.toString(),
-                            soil_moisture: currentSoil.toString()
+                            moisture: currentSoil.toString(),
+                            valve: "OFF"
                         }
                     };
                 } else {
@@ -398,7 +399,7 @@
             document.getElementById('val-temp').textContent = currentTemp.toFixed(1);
             
             // Atualiza Umidade do Solo
-            const soilMoisture = parseInt(data.soil_moisture) || 0;
+            const soilMoisture = parseInt(data.moisture) || 0;
             document.getElementById('val-soil').textContent = soilMoisture;
 
             // Atualiza Barras de Progresso (Visual)
