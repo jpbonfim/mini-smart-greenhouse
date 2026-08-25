@@ -2,6 +2,9 @@
 
 An Arduino-based greenhouse with Bluetooth connectivity, LCD display, and web interface for remote plant preset management and monitoring.
 
+<img width="950" height="909" alt="image" src="https://github.com/user-attachments/assets/deca3e91-b2f9-4d87-af57-5535cfa9c656" />
+
+
 ## Features
 
 - **Bluetooth Control**: Change plant presets remotely via ZS-040 (HC-05/HC-06) module
