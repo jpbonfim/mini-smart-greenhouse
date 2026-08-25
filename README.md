@@ -24,7 +24,7 @@ An Arduino-based greenhouse with Bluetooth connectivity, LCD display, and web in
 - Breadboard and jumper wires
 - USB cable for Arduino
 
-## 💻 Software Requirements
+## Software Requirements
 
 - Arduino IDE (1.8.x or newer)
 - Python 3.7+
@@ -120,10 +120,10 @@ Send these commands directly via Bluetooth:
 ### Bluetooth Module (Critical!)
 ```
 Arduino Pin 9 ──[1KΩ]──┬── Bluetooth RX
-                        │
-                    [2KΩ]
-                        │
-                       GND
+                       │
+                     [2KΩ]
+                       │
+                      GND
 ```
 
 Arduino Pin 10 ── Bluetooth TX (direct)
@@ -132,10 +132,9 @@ Arduino Pin 10 ── Bluetooth TX (direct)
 - RS → Pin 12
 - E → Pin 11
 - D4-D7 → Pins 6, 5, 4, 3
-- Power: VDD→5V, VSS→GND
-- Contrast: V0→Potentiometer
+- Power: VDD → 5V, VSS → GND
+- Contrast: V0 → Potentiometer
 
-See `WIRING_DIAGRAM.txt` for complete visual diagram.
 
 ## Troubleshooting
 
@@ -166,7 +165,5 @@ mini-smart-greenhouse/
 │   ├── templates/
 │   │   └── index.html             # Web interface
 │   └── connect_and_create_rfcomm.sh  # Linux BT connection script
-├── BLUETOOTH_WIRING.md            # Detailed wiring guide
-├── WIRING_DIAGRAM.txt             # ASCII wiring diagram
 └── README.md                      # This file
 ```
